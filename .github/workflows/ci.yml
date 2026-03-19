@@ -25,19 +25,13 @@ jobs:
       - name: Read Helm version
         run: echo "HELM_VERSION=$(cat .helm-version)" >> "${GITHUB_ENV}"
 
-      - name: Install Helm
-        uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4 # v4.3.1
-        with:
-          version: ${{ env.HELM_VERSION }}
-
-      - name: Install helm-unittest plugin
-        run: helm plugin install https://github.com/helm-unittest/helm-unittest.git
-
       - name: Lint
         run: helm lint .
 
       - name: Run unit tests
-        run: helm unittest .
+        uses: d3adb5/helm-unittest-action@850bc76597579183998069830d5fa8c3ef0ea34a # v2.5.0
+        with:
+          helm-version: ${{ env.HELM_VERSION }}
 
   check-docs:
     if: github.event_name == 'pull_request'
