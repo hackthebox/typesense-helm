@@ -6,6 +6,113 @@
       "required": [],
       "title": "affinity"
     },
+    "backup": {
+      "properties": {
+        "enabled": {
+          "default": false,
+          "description": "Enable the backup sidecar. Requires backup.image and restic env vars to be configured.",
+          "title": "enabled",
+          "type": "boolean"
+        },
+        "env": {
+          "description": "Extra env vars for the backup sidecar (e.g. RESTIC_REPOSITORY, AWS_ACCESS_KEY_ID)",
+          "items": {
+            "required": []
+          },
+          "required": [],
+          "title": "env"
+        },
+        "envFrom": {
+          "description": "References to existing Secrets/ConfigMaps to inject into the backup sidecar",
+          "items": {
+            "required": []
+          },
+          "required": [],
+          "title": "envFrom"
+        },
+        "image": {
+          "properties": {
+            "pullPolicy": {
+              "default": "IfNotPresent",
+              "description": "Image pull policy",
+              "required": [],
+              "title": "pullPolicy"
+            },
+            "repository": {
+              "default": "ghcr.io/restic/restic",
+              "description": "Backup sidecar image. Defaults to the official restic image which includes wget and crond via BusyBox.",
+              "required": [],
+              "title": "repository"
+            },
+            "tag": {
+              "default": "0.18.1",
+              "description": "Image tag",
+              "required": [],
+              "title": "tag"
+            }
+          },
+          "required": [],
+          "title": "image",
+          "type": "object"
+        },
+        "intervalSeconds": {
+          "default": 86400,
+          "description": "Interval in seconds between backup runs (default: 86400 = 24h)",
+          "minimum": 60,
+          "title": "intervalSeconds",
+          "type": "integer"
+        },
+        "resources": {
+          "description": "Resource requests and limits for the backup sidecar",
+          "properties": {
+            "requests": {
+              "properties": {
+                "cpu": {
+                  "default": "10m",
+                  "title": "cpu",
+                  "type": "string"
+                },
+                "memory": {
+                  "default": "32Mi",
+                  "title": "memory",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "cpu",
+                "memory"
+              ],
+              "title": "requests",
+              "type": "object"
+            }
+          },
+          "required": [
+            "requests"
+          ],
+          "title": "resources"
+        },
+        "retention": {
+          "properties": {
+            "keepLast": {
+              "default": 7,
+              "description": "Number of most recent restic snapshots to keep",
+              "minimum": 1,
+              "title": "keepLast",
+              "type": "integer"
+            }
+          },
+          "required": [],
+          "title": "retention",
+          "type": "object"
+        }
+      },
+      "required": [
+        "image",
+        "retention"
+      ],
+      "title": "backup",
+      "type": "object"
+    },
     "extraArgs": {
       "description": "Extra command-line arguments for Typesense server (e.g., [\"--filter-by-max-ops=200\"])",
       "items": {
@@ -839,7 +946,8 @@
     "secrets",
     "typesense",
     "serviceAccount",
-    "metrics"
+    "metrics",
+    "backup"
   ],
   "type": "object"
 }

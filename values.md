@@ -1,6 +1,6 @@
 # typesense
 
-![Version: 1.0.0](https://img.shields.io/badge/Version-1.0.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 30.1](https://img.shields.io/badge/AppVersion-30.1-informational?style=flat-square)
+![Version: 1.1.0](https://img.shields.io/badge/Version-1.1.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 30.1](https://img.shields.io/badge/AppVersion-30.1-informational?style=flat-square)
 
 [![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/typesense)](https://artifacthub.io/packages/search?repo=typesense)
 
@@ -16,9 +16,11 @@ A production-ready Helm chart for deploying [Typesense](https://typesense.org), 
 - **Security Hardened** -- Non-root container (UID 10000), read-only root filesystem, all capabilities dropped
 - **Gateway API & Ingress** -- Supports both Kubernetes Ingress and Gateway API (HTTPRoute)
 - **Prometheus Metrics** -- Optional sidecar exporter with ServiceMonitor support
+- **Automated Backups** -- Optional restic-based backup sidecar with cron scheduling and retention policies
 - **External Secrets** -- Optional integration with the External Secrets Operator
 - **PodDisruptionBudget** -- Protect Raft quorum during node maintenance
 - **Comprehensive Tuning** -- CORS, analytics, cache, thread pools, logging, health thresholds
+- **Battle-tested** -- Actively used in production on AWS EKS with S3-based backups
 
 ## TL;DR
 
@@ -213,11 +215,55 @@ storage:
 
 > **Warning:** Reducing `storage.size` after initial deployment has no effect. PVC resize depends on your StorageClass supporting volume expansion.
 
+### Backup
+
+The chart includes an optional backup sidecar that uses [restic](https://restic.net) to take scheduled snapshots of Typesense data and upload them to a remote repository (S3, GCS, Azure Blob, etc.).
+
+```yaml
+backup:
+  enabled: true
+  intervalSeconds: 86400       # every 24 hours
+  retention:
+    keepLast: 7
+  envFrom:
+    - secretRef:
+        name: restic-credentials
+```
+
+The `restic-credentials` Secret should contain `RESTIC_REPOSITORY`, `RESTIC_PASSWORD`, and any cloud provider credentials (e.g., `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`).
+
+For quick testing, you can pass credentials inline (not recommended for production):
+
+```yaml
+backup:
+  enabled: true
+  env:
+    - name: RESTIC_REPOSITORY
+      value: s3:s3.amazonaws.com/my-bucket/typesense
+    - name: RESTIC_PASSWORD
+      value: my-restic-password
+```
+
+Key details:
+- Backups only run on **pod-0** (other pods skip automatically)
+- The restic repository is initialized automatically on the first run
+- The backup sidecar runs as non-root (UID 10000) with all capabilities dropped
+- See [RESTORE_RUNBOOK.md](RESTORE_RUNBOOK.md) for disaster recovery procedures
+
 ## Values
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | affinity | object | `{}` | Affinity rules for pod scheduling |
+| backup.enabled | bool | `false` | Enable the backup sidecar. Requires backup.image and restic env vars to be configured. |
+| backup.env | list | `[]` | Extra env vars for the backup sidecar (e.g. RESTIC_REPOSITORY, AWS_ACCESS_KEY_ID) |
+| backup.envFrom | list | `[]` | References to existing Secrets/ConfigMaps to inject into the backup sidecar |
+| backup.image.pullPolicy | string | `"IfNotPresent"` | Image pull policy |
+| backup.image.repository | string | `"ghcr.io/restic/restic"` | Backup sidecar image. Defaults to the official restic image which includes wget and crond via BusyBox. |
+| backup.image.tag | string | `"0.18.1"` | Image tag |
+| backup.intervalSeconds | int | `86400` | Interval in seconds between backup runs (default: 86400 = 24h) |
+| backup.resources | object | `{"requests":{"cpu":"10m","memory":"32Mi"}}` | Resource requests and limits for the backup sidecar |
+| backup.retention.keepLast | int | `7` | Number of most recent restic snapshots to keep |
 | extraArgs | list | `[]` | Extra command-line arguments for Typesense server (e.g., ["--filter-by-max-ops=200"]) |
 | extraEnv | list | `[]` | Extra environment variables for the Typesense container |
 | fullnameOverride | string | `""` | Override the full name of the release (optional) |
