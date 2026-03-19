@@ -207,7 +207,7 @@ typesense:
     domains: []
   cache:
     # @schema
-    # type: integer
+    # type: [integer, "null"]
     # minimum: 0
     # @schema
     # -- LRU cache size for search responses. Unset uses Typesense default (1000)
@@ -216,34 +216,34 @@ typesense:
     # -- Enable aggregated search query analytics
     enabled: false
     # @schema
-    # type: integer
+    # type: [integer, "null"]
     # minimum: 1
     # @schema
     # -- How often analytics are persisted to disk in seconds. Unset uses Typesense default (3600)
     flushInterval:
   snapshots:
     # @schema
-    # type: integer
+    # type: [integer, "null"]
     # minimum: 1
     # @schema
     # -- Replication log snapshot frequency in seconds. Unset uses Typesense default (3600)
     intervalSeconds:
   # @schema
-  # type: integer
+  # type: [integer, "null"]
   # minimum: 1
   # @schema
   # -- Concurrent request handler threads. Unset uses Typesense default (NUM_CORES * 8)
   threadPoolSize:
   limits:
     # @schema
-    # type: integer
+    # type: [integer, "null"]
     # minimum: 0
     # maximum: 100
     # @schema
     # -- Reject writes above this disk usage percentage. Unset uses Typesense default (100)
     diskUsedMaxPercentage:
     # @schema
-    # type: integer
+    # type: [integer, "null"]
     # minimum: 0
     # maximum: 100
     # @schema
@@ -251,20 +251,20 @@ typesense:
     memoryUsedMaxPercentage:
   health:
     # @schema
-    # type: integer
+    # type: [integer, "null"]
     # minimum: 0
     # @schema
     # -- Update lag threshold before rejecting reads. Unset uses Typesense default (1000)
     readLag:
     # @schema
-    # type: integer
+    # type: [integer, "null"]
     # minimum: 0
     # @schema
     # -- Update lag threshold before rejecting writes. Unset uses Typesense default (500)
     writeLag:
   logging:
     # @schema
-    # type: integer
+    # type: [integer, "null"]
     # @schema
     # -- Threshold in ms for slow request logging (-1 disables). Unset uses Typesense default (-1)
     slowRequestsTimeMs:

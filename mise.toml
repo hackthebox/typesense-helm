@@ -20,6 +20,11 @@ alias = 'd'
 description = 'Lint the Helm chart'
 run = 'helm lint .'
 
+[tasks.schema]
+description = 'Generate values.schema.json from values.yaml'
+run = 'helm schema -p -a -k additionalProperties'
+alias = 's'
+
 [tasks.bump]
 description = 'Bump chart version (major, minor, patch, rc)'
 run = '''
@@ -52,4 +57,7 @@ subprocess.run(["yq", "e", "-i", f'.version = "{new_version}"', "Chart.yaml"])
 
 [tasks.setup]
 description = 'Install Helm plugins (tools are managed by mise)'
-run = 'helm plugin install https://github.com/helm-unittest/helm-unittest.git'
+run = '''
+helm plugin install https://github.com/helm-unittest/helm-unittest.git 2>/dev/null || echo "helm-unittest already installed"
+helm plugin install https://github.com/dadav/helm-schema.git 2>/dev/null || echo "helm-schema already installed"
+'''

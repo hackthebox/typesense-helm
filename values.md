@@ -341,7 +341,7 @@ This chart is licensed under the [MIT License](LICENSE).
 
 | Name | Email | Url |
 | ---- | ------ | --- |
-| Hack The Box SRE |  | <https://github.com/hackthebox> |
+| Hack The Box SRE | <oss@hackthebox.com> | <https://github.com/hackthebox> |
 
 ## Source Code
 

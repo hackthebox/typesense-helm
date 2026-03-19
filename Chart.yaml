@@ -21,6 +21,7 @@ keywords:
   - raft
 maintainers:
   - name: Hack The Box SRE
+    email: oss@hackthebox.com
     url: https://github.com/hackthebox
 kubeVersion: ">=1.26.0-0"
 annotations:
