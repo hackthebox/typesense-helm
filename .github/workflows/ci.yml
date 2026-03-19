@@ -79,7 +79,7 @@ jobs:
           fetch-depth: 0
 
       - name: PR Metrics
-        uses: microsoft/PR-Metrics@385f800cf4f445faf414a317e48c591aa018c711 # v1.7.5
+        uses: microsoft/PR-Metrics@5afec3d3a2ad37a65a0b6497965edc2c38e1c02f # v1.7.12
         env:
           PR_METRICS_ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
