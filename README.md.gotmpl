@@ -224,31 +224,32 @@ The chart includes an optional backup sidecar that uses [restic](https://restic.
 ```yaml
 backup:
   enabled: true
-  schedule: "0 2 * * *"        # daily at 2am
+  intervalSeconds: 86400       # every 24 hours
   retention:
     keepLast: 7
-  env:
-    - name: RESTIC_REPOSITORY
-      value: s3:s3.amazonaws.com/my-bucket/typesense
-    - name: RESTIC_PASSWORD
-      value: my-restic-password
-    - name: AWS_DEFAULT_REGION
-      value: eu-central-1
-```
-
-For production, pass credentials via `backup.envFrom` referencing an existing Secret rather than inline env vars:
-
-```yaml
-backup:
-  enabled: true
   envFrom:
     - secretRef:
         name: restic-credentials
 ```
 
+The `restic-credentials` Secret should contain `RESTIC_REPOSITORY`, `RESTIC_PASSWORD`, and any cloud provider credentials (e.g., `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`).
+
+For quick testing, you can pass credentials inline (not recommended for production):
+
+```yaml
+backup:
+  enabled: true
+  env:
+    - name: RESTIC_REPOSITORY
+      value: s3:s3.amazonaws.com/my-bucket/typesense
+    - name: RESTIC_PASSWORD
+      value: my-restic-password
+```
+
 Key details:
 - Backups only run on **pod-0** (other pods skip automatically)
 - The restic repository is initialized automatically on the first run
+- The backup sidecar runs as non-root (UID 10000) with all capabilities dropped
 - See [RESTORE_RUNBOOK.md](RESTORE_RUNBOOK.md) for disaster recovery procedures
 
 {{ template "chart.valuesSection" . }}

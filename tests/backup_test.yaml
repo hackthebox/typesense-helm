@@ -99,14 +99,14 @@ tests:
           path: .spec.template.spec.containers[1].volumeMounts[0].mountPath
           value: /usr/share/typesense/data
 
-  - it: should pass BACKUP_SCHEDULE and BACKUP_KEEP_LAST env vars to sidecar
+  - it: should pass BACKUP_INTERVAL_SECONDS and BACKUP_KEEP_LAST env vars to sidecar
     template: statefulset.yaml
     set:
       metrics:
         enabled: false
       backup:
         enabled: true
-        schedule: "0 3 * * *"
+        intervalSeconds: 3600
         retention:
           keepLast: 14
         image:
@@ -117,13 +117,34 @@ tests:
       - contains:
           path: .spec.template.spec.containers[1].env
           content:
-            name: BACKUP_SCHEDULE
-            value: "0 3 * * *"
+            name: BACKUP_INTERVAL_SECONDS
+            value: "3600"
       - contains:
           path: .spec.template.spec.containers[1].env
           content:
             name: BACKUP_KEEP_LAST
             value: "14"
+
+  - it: should harden backup sidecar with securityContext
+    template: statefulset.yaml
+    set:
+      metrics:
+        enabled: false
+      backup:
+        enabled: true
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: .spec.template.spec.containers[1].securityContext
+          value:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 10000
+            runAsGroup: 3000
+            capabilities:
+              drop:
+                - ALL
 
   - it: should share typesense secret with backup sidecar
     template: statefulset.yaml

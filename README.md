@@ -222,31 +222,32 @@ The chart includes an optional backup sidecar that uses [restic](https://restic.
 ```yaml
 backup:
   enabled: true
-  schedule: "0 2 * * *"        # daily at 2am
+  intervalSeconds: 86400       # every 24 hours
   retention:
     keepLast: 7
-  env:
-    - name: RESTIC_REPOSITORY
-      value: s3:s3.amazonaws.com/my-bucket/typesense
-    - name: RESTIC_PASSWORD
-      value: my-restic-password
-    - name: AWS_DEFAULT_REGION
-      value: eu-central-1
-```
-
-For production, pass credentials via `backup.envFrom` referencing an existing Secret rather than inline env vars:
-
-```yaml
-backup:
-  enabled: true
   envFrom:
     - secretRef:
         name: restic-credentials
 ```
 
+The `restic-credentials` Secret should contain `RESTIC_REPOSITORY`, `RESTIC_PASSWORD`, and any cloud provider credentials (e.g., `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`).
+
+For quick testing, you can pass credentials inline (not recommended for production):
+
+```yaml
+backup:
+  enabled: true
+  env:
+    - name: RESTIC_REPOSITORY
+      value: s3:s3.amazonaws.com/my-bucket/typesense
+    - name: RESTIC_PASSWORD
+      value: my-restic-password
+```
+
 Key details:
 - Backups only run on **pod-0** (other pods skip automatically)
 - The restic repository is initialized automatically on the first run
+- The backup sidecar runs as non-root (UID 10000) with all capabilities dropped
 - See [RESTORE_RUNBOOK.md](RESTORE_RUNBOOK.md) for disaster recovery procedures
 
 ## Values
@@ -260,9 +261,9 @@ Key details:
 | backup.image.pullPolicy | string | `"IfNotPresent"` | Image pull policy |
 | backup.image.repository | string | `"ghcr.io/restic/restic"` | Backup sidecar image. Defaults to the official restic image which includes wget and crond via BusyBox. |
 | backup.image.tag | string | `"0.18.1"` | Image tag |
+| backup.intervalSeconds | int | `86400` | Interval in seconds between backup runs (default: 86400 = 24h) |
 | backup.resources | object | `{"requests":{"cpu":"10m","memory":"32Mi"}}` | Resource requests and limits for the backup sidecar |
 | backup.retention.keepLast | int | `7` | Number of most recent restic snapshots to keep |
-| backup.schedule | string | `"0 2 * * *"` | Cron schedule for backups (cron format) |
 | extraArgs | list | `[]` | Extra command-line arguments for Typesense server (e.g., ["--filter-by-max-ops=200"]) |
 | extraEnv | list | `[]` | Extra environment variables for the Typesense container |
 | fullnameOverride | string | `""` | Override the full name of the release (optional) |

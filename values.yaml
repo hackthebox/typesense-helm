@@ -325,8 +325,12 @@ backup:
   # @schema
   # -- Enable the backup sidecar. Requires backup.image and restic env vars to be configured.
   enabled: false
-  # -- Cron schedule for backups (cron format)
-  schedule: "0 2 * * *"
+  # @schema
+  # type: integer
+  # minimum: 60
+  # @schema
+  # -- Interval in seconds between backup runs (default: 86400 = 24h)
+  intervalSeconds: 86400
   image:
     # -- Backup sidecar image. Defaults to the official restic image which includes wget and crond via BusyBox.
     repository: ghcr.io/restic/restic
