@@ -20,6 +20,7 @@ A production-ready Helm chart for deploying [Typesense](https://typesense.org), 
 - **External Secrets** -- Optional integration with the External Secrets Operator
 - **PodDisruptionBudget** -- Protect Raft quorum during node maintenance
 - **Comprehensive Tuning** -- CORS, analytics, cache, thread pools, logging, health thresholds
+- **Battle-tested** -- Actively used in production on AWS EKS with S3-based backups
 
 ## TL;DR
 
