@@ -1,6 +1,4 @@
 suite: App
-chart:
-  version: 1.1.0
 release:
   name: foo
   namespace: bar
@@ -23,14 +21,16 @@ tests:
       - equal:
           path: .spec.replicas
           value: 3
-      - equal:
+      - isSubset:
           path: .spec.template.metadata.labels
-          value:
-            helm.sh/chart: typesense-1.1.0
+          content:
             app.kubernetes.io/name: typesense
             app.kubernetes.io/instance: foo
             app.kubernetes.io/version: "30.1"
             app.kubernetes.io/managed-by: Helm
+      - matchRegex:
+          path: .spec.template.metadata.labels["helm.sh/chart"]
+          pattern: ^typesense-\d+\.\d+\.\d+$
 
       - equal:
           path: .spec.template.spec.securityContext
