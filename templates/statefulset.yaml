@@ -161,6 +161,8 @@ spec:
               value: {{ .Values.backup.retention.keepLast | quote }}
             - name: TYPESENSE_PORT
               value: {{ .Values.service.port | quote }}
+            - name: RESTIC_CACHE_DIR
+              value: /tmp/.cache/restic
             {{- with .Values.backup.env }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
@@ -176,6 +178,8 @@ spec:
               mountPath: /usr/share/typesense/data
             - name: backup-scripts
               mountPath: /scripts
+            - name: backup-tmp
+              mountPath: /tmp
           resources: {{- toYaml .Values.backup.resources | nindent 12 }}
         {{- end }}
 
@@ -185,6 +189,8 @@ spec:
           configMap:
             name: {{ include "typesense.fullname" . }}-backup-scripts
             defaultMode: 0755
+        - name: backup-tmp
+          emptyDir: {}
         {{- end }}
 
         - name: nodeslist
