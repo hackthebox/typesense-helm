@@ -18,6 +18,7 @@ A production-ready Helm chart for deploying [Typesense](https://typesense.org), 
 - **Security Hardened** -- Non-root container (UID 10000), read-only root filesystem, all capabilities dropped
 - **Gateway API & Ingress** -- Supports both Kubernetes Ingress and Gateway API (HTTPRoute)
 - **Prometheus Metrics** -- Optional sidecar exporter with ServiceMonitor support
+- **Automated Backups** -- Optional restic-based backup sidecar with cron scheduling and retention policies
 - **External Secrets** -- Optional integration with the External Secrets Operator
 - **PodDisruptionBudget** -- Protect Raft quorum during node maintenance
 - **Comprehensive Tuning** -- CORS, analytics, cache, thread pools, logging, health thresholds
@@ -214,6 +215,40 @@ storage:
 ```
 
 > **Warning:** Reducing `storage.size` after initial deployment has no effect. PVC resize depends on your StorageClass supporting volume expansion.
+
+### Backup
+
+The chart includes an optional backup sidecar that uses [restic](https://restic.net) to take scheduled snapshots of Typesense data and upload them to a remote repository (S3, GCS, Azure Blob, etc.).
+
+```yaml
+backup:
+  enabled: true
+  schedule: "0 2 * * *"        # daily at 2am
+  retention:
+    keepLast: 7
+  env:
+    - name: RESTIC_REPOSITORY
+      value: s3:s3.amazonaws.com/my-bucket/typesense
+    - name: RESTIC_PASSWORD
+      value: my-restic-password
+    - name: AWS_DEFAULT_REGION
+      value: eu-central-1
+```
+
+For production, pass credentials via `backup.envFrom` referencing an existing Secret rather than inline env vars:
+
+```yaml
+backup:
+  enabled: true
+  envFrom:
+    - secretRef:
+        name: restic-credentials
+```
+
+Key details:
+- Backups only run on **pod-0** (other pods skip automatically)
+- The restic repository is initialized automatically on the first run
+- See [RESTORE_RUNBOOK.md](RESTORE_RUNBOOK.md) for disaster recovery procedures
 
 {{ template "chart.valuesSection" . }}
 
