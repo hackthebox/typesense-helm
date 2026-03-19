@@ -1,6 +1,6 @@
 # typesense
 
-![Version: 1.0.0](https://img.shields.io/badge/Version-1.0.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 30.1](https://img.shields.io/badge/AppVersion-30.1-informational?style=flat-square)
+![Version: 1.1.0](https://img.shields.io/badge/Version-1.1.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 30.1](https://img.shields.io/badge/AppVersion-30.1-informational?style=flat-square)
 
 [![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/typesense)](https://artifacthub.io/packages/search?repo=typesense)
 
@@ -218,6 +218,15 @@ storage:
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | affinity | object | `{}` | Affinity rules for pod scheduling |
+| backup.enabled | bool | `false` | Enable the backup sidecar. Requires backup.image and restic env vars to be configured. |
+| backup.env | list | `[]` | Extra env vars for the backup sidecar (e.g. RESTIC_REPOSITORY, AWS_ACCESS_KEY_ID) |
+| backup.envFrom | list | `[]` | References to existing Secrets/ConfigMaps to inject into the backup sidecar |
+| backup.image.pullPolicy | string | `"IfNotPresent"` | Image pull policy |
+| backup.image.repository | string | `"ghcr.io/restic/restic"` | Backup sidecar image. Defaults to the official restic image which includes wget and crond via BusyBox. |
+| backup.image.tag | string | `"0.18.1"` | Image tag |
+| backup.resources | object | `{"requests":{"cpu":"10m","memory":"32Mi"}}` | Resource requests and limits for the backup sidecar |
+| backup.retention.keepLast | int | `7` | Number of most recent restic snapshots to keep |
+| backup.schedule | string | `"0 2 * * *"` | Cron schedule for backups (cron format) |
 | extraArgs | list | `[]` | Extra command-line arguments for Typesense server (e.g., ["--filter-by-max-ops=200"]) |
 | extraEnv | list | `[]` | Extra environment variables for the Typesense container |
 | fullnameOverride | string | `""` | Override the full name of the release (optional) |

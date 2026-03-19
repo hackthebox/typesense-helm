@@ -37,6 +37,10 @@ annotations:
       image: typesense/typesense:30.1
     - name: metrics-exporter
       image: imatefx/typesense-prometheus-exporter:v0.1.5
+    - name: backup
+      image: ghcr.io/restic/restic:0.18.1
   artifacthub.io/changes: |
     - kind: added
-      description: Initial open-source release
+      description: Backup sidecar with restic for scheduled S3 snapshots
+    - kind: added
+      description: Backup scripts configmap with entrypoint and backup logic

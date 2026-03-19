@@ -15,3 +15,11 @@ Typesense is an open-source, typo-tolerant search engine optimized for instant s
 - **Repository:** [imatefx/typesense-prometheus-exporter](https://github.com/imatefx/typesense-prometheus-exporter)
 
 Provides Prometheus metrics for Typesense server instances. Used as an optional sidecar container when `metrics.enabled` is set to `true`.
+
+## Restic
+
+- **Project:** [Restic](https://restic.net)
+- **Repository:** [restic/restic](https://github.com/restic/restic)
+- **License:** BSD-2-Clause
+
+A fast, secure, and efficient backup program. Used as the backup sidecar image for scheduled Typesense data snapshots when `backup.enabled` is set to `true`.
