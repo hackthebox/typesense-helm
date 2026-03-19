@@ -2,6 +2,8 @@
 
 ![Version: 1.0.0](https://img.shields.io/badge/Version-1.0.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 30.1](https://img.shields.io/badge/AppVersion-30.1-informational?style=flat-square)
 
+[![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/typesense)](https://artifacthub.io/packages/search?repo=typesense)
+
 > **Disclaimer:** This Helm chart is maintained by [Hack The Box](https://github.com/hackthebox) and is **not** officially affiliated with or endorsed by the [Typesense](https://typesense.org) project. It is provided on a best-effort basis with no guarantees. Use at your own risk.
 
 ## Overview

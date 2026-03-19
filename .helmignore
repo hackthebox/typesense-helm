@@ -21,3 +21,5 @@
 .idea/
 *.tmproj
 .vscode/
+# ArtifactHub metadata (not part of the chart)
+artifacthub-repo.yml
