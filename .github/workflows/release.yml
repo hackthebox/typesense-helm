@@ -29,6 +29,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
+      - name: Read Helm version
+        run: echo "HELM_VERSION=$(cat .helm-version)" >> "${GITHUB_ENV}"
+
+      - name: Install Helm
+        uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4 # v4.3.1
+        with:
+          version: ${{ env.HELM_VERSION }}
+
       - name: Login to GHCR
         env:
           HELM_REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
