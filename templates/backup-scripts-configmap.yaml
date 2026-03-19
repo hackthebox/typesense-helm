@@ -1,0 +1,68 @@
+{{- if .Values.backup.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "typesense.fullname" . }}-backup-scripts
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "typesense.labels" . | nindent 4 }}
+data:
+  entrypoint.sh: |
+    #!/bin/sh
+    set -e
+    mkdir -p /var/spool/cron/crontabs
+    echo "${BACKUP_SCHEDULE:-0 2 * * *} /scripts/backup.sh >> /proc/1/fd/1 2>&1" > /var/spool/cron/crontabs/root
+    echo "[backup-sidecar] Starting crond with schedule: ${BACKUP_SCHEDULE:-0 2 * * *}"
+    crond -f -L /dev/stdout &
+    CROND_PID=$!
+    trap 'echo "[backup-sidecar] Shutting down"; kill $CROND_PID 2>/dev/null; wait $CROND_PID 2>/dev/null; exit 0' TERM INT
+    wait $CROND_PID
+
+  backup.sh: |
+    #!/bin/sh
+    set -eu
+
+    TYPESENSE_PORT="${TYPESENSE_PORT}"
+    SNAPSHOT_BASE="/usr/share/typesense/data/snapshots"
+    TIMESTAMP=$(date +%Y%m%dT%H%M%S)
+    SNAPSHOT_DIR="${SNAPSHOT_BASE}/${TIMESTAMP}"
+    KEEP_LAST="${BACKUP_KEEP_LAST:-{{ .Values.backup.retention.keepLast }}}"
+
+    # Only pod-0 runs the backup
+    ORDINAL=$(hostname | awk -F'-' '{print $NF}')
+    if [ "${ORDINAL}" != "0" ]; then
+      echo "[backup] Skipping: pod ordinal ${ORDINAL} is not 0"
+      exit 0
+    fi
+
+    echo "[backup] Starting backup at ${TIMESTAMP}"
+
+    # Clean up local snapshot dir on exit (success or failure)
+    trap 'echo "[backup] Cleaning up ${SNAPSHOT_DIR}"; rm -rf "${SNAPSHOT_DIR}" 2>/dev/null || true' EXIT
+
+    # Initialize restic repository if it does not exist yet
+    echo "[backup] Initializing restic repo if needed..."
+    restic snapshots --quiet > /dev/null 2>&1 || restic init
+
+    # Remove stale restic locks from previous crashed runs
+    echo "[backup] Unlocking restic repo..."
+    restic unlock 2>/dev/null || true
+
+    # Trigger Typesense snapshot — writes to data PVC at SNAPSHOT_DIR
+    echo "[backup] Triggering Typesense snapshot to ${SNAPSHOT_DIR}..."
+    RESULT=$(wget -q -O - \
+      --header="X-TYPESENSE-API-KEY: ${TYPESENSE_API_KEY}" \
+      --post-data="" \
+      "http://$(hostname -i):${TYPESENSE_PORT}/operations/snapshot?snapshot_path=${SNAPSHOT_DIR}")
+    echo "[backup] Snapshot result: ${RESULT}"
+
+    # Upload snapshot to restic repository
+    echo "[backup] Running restic backup..."
+    restic backup "${SNAPSHOT_DIR}" --tag "typesense" --tag "${TIMESTAMP}"
+
+    # Enforce retention policy (trap handles local cleanup)
+    echo "[backup] Pruning old snapshots, keeping last ${KEEP_LAST}..."
+    restic forget --keep-last "${KEEP_LAST}" --tag "typesense" --prune
+
+    echo "[backup] Backup complete."
+{{- end }}
