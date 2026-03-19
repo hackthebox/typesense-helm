@@ -1,6 +1,6 @@
 suite: App
 chart:
-  version: 1.0.0
+  version: 1.1.0
 release:
   name: foo
   namespace: bar
@@ -26,7 +26,7 @@ tests:
       - equal:
           path: .spec.template.metadata.labels
           value:
-            helm.sh/chart: typesense-1.0.0
+            helm.sh/chart: typesense-1.1.0
             app.kubernetes.io/name: typesense
             app.kubernetes.io/instance: foo
             app.kubernetes.io/version: "30.1"
