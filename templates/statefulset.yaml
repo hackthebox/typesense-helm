@@ -140,7 +140,48 @@ spec:
               containerPort: {{ .Values.metrics.port }}
           resources: {{- toYaml .Values.metrics.resources | nindent 12 }}
         {{- end }}
+        {{- if .Values.backup.enabled }}
+        - name: backup-sidecar
+          image: "{{ .Values.backup.image.repository }}:{{ .Values.backup.image.tag }}"
+          imagePullPolicy: {{ .Values.backup.image.pullPolicy }}
+          command: ["/bin/sh", "/scripts/entrypoint.sh"]
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: false
+            runAsUser: 0
+          env:
+            - name: BACKUP_SCHEDULE
+              value: {{ .Values.backup.schedule | quote }}
+            - name: BACKUP_KEEP_LAST
+              value: {{ .Values.backup.retention.keepLast | quote }}
+            - name: TYPESENSE_PORT
+              value: {{ .Values.service.port | quote }}
+            {{- with .Values.backup.env }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          envFrom:
+            - secretRef:
+                name: {{ .Values.secrets.secretName | default (printf "%s-secret" (include "typesense.fullname" .)) }}
+                optional: {{ .Values.secrets.optional }}
+            {{- with .Values.backup.envFrom }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          volumeMounts:
+            - name: {{ include "typesense.fullname" . }}-data
+              mountPath: /usr/share/typesense/data
+            - name: backup-scripts
+              mountPath: /scripts
+          resources: {{- toYaml .Values.backup.resources | nindent 12 }}
+        {{- end }}
+
       volumes:
+        {{- if .Values.backup.enabled }}
+        - name: backup-scripts
+          configMap:
+            name: {{ include "typesense.fullname" . }}-backup-scripts
+            defaultMode: 0755
+        {{- end }}
+
         - name: nodeslist
           configMap:
             name: {{ include "typesense.fullname" . }}-nodeslist
