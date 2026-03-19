@@ -1,0 +1,177 @@
+{{- if and (gt (int .Values.replicaCount) 1) (eq (mod (int .Values.replicaCount) 2) 0) }}
+{{- fail "replicaCount must be an odd number for Raft quorum (1, 3, 5, ...)" }}
+{{- end }}
+# Typesense statefulset configuration
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "typesense.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "typesense.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "typesense.fullname" . }}-headless-svc
+  podManagementPolicy: Parallel
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "typesense.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "typesense.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      serviceAccountName: {{ include "typesense.serviceAccountName" . }}
+      securityContext: {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext: {{- toYaml .Values.securityContext | nindent 12 }}
+          command:
+            - "/opt/typesense-server"
+            - "-d"
+            - "/usr/share/typesense/data"
+            - "--api-port"
+            - "{{ .Values.service.port }}"
+            - "--peering-port"
+            - "8107"
+            - "--nodes"
+            - "/usr/share/typesense/nodes"
+            - "--reset-peers-on-error"
+            {{- if .Values.typesense.cors.enabled }}
+            - "--enable-cors"
+            {{- if .Values.typesense.cors.domains }}
+            - "--cors-domains={{ .Values.typesense.cors.domains | join "," }}"
+            {{- end }}
+            {{- end }}
+            {{- if .Values.typesense.analytics.enabled }}
+            - "--enable-search-analytics"
+            {{- end }}
+            {{- with .Values.typesense.analytics.flushInterval }}
+            - "--analytics-flush-interval={{ . }}"
+            {{- end }}
+            {{- with .Values.typesense.snapshots.intervalSeconds }}
+            - "--snapshot-interval-seconds={{ . }}"
+            {{- end }}
+            {{- with .Values.typesense.cache.numEntries }}
+            - "--cache-num-entries={{ . }}"
+            {{- end }}
+            {{- with .Values.typesense.threadPoolSize }}
+            - "--thread-pool-size={{ . }}"
+            {{- end }}
+            {{- with .Values.typesense.limits.diskUsedMaxPercentage }}
+            - "--disk-used-max-percentage={{ . }}"
+            {{- end }}
+            {{- with .Values.typesense.limits.memoryUsedMaxPercentage }}
+            - "--memory-used-max-percentage={{ . }}"
+            {{- end }}
+            {{- with .Values.typesense.health.readLag }}
+            - "--healthy-read-lag={{ . }}"
+            {{- end }}
+            {{- with .Values.typesense.health.writeLag }}
+            - "--healthy-write-lag={{ . }}"
+            {{- end }}
+            {{- with .Values.typesense.logging.slowRequestsTimeMs }}
+            - "--log-slow-requests-time-ms={{ . }}"
+            {{- end }}
+            {{- if .Values.typesense.logging.enableSearchLogging }}
+            - "--enable-search-logging"
+            {{- end }}
+            {{- range .Values.extraArgs }}
+            - {{ . | quote }}
+            {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+            - name: tcp-peering
+              containerPort: 8107
+          startupProbe: {{- toYaml .Values.startupProbe | nindent 12 }}
+          livenessProbe: {{- toYaml .Values.livenessProbe | nindent 12 }}
+          readinessProbe: {{- toYaml .Values.readinessProbe | nindent 12 }}
+          resources: {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+          - name: nodeslist
+            mountPath: /usr/share/typesense
+          - name: {{ include "typesense.fullname" . }}-data
+            mountPath: /usr/share/typesense/data
+          envFrom:
+          - secretRef:
+              name: {{ .Values.secrets.secretName | default (printf "%s-secret" (include "typesense.fullname" .)) }}
+              optional: {{ .Values.secrets.optional }}
+          {{- with .Values.extraEnv }}
+          env:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+        {{- if .Values.metrics.enabled }}
+        - name: metrics-exporter
+          image: "{{ .Values.metrics.image.repository }}:{{ .Values.metrics.image.tag }}"
+          imagePullPolicy: {{ .Values.metrics.image.pullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 10000
+            runAsGroup: 3000
+            capabilities:
+              drop:
+                - ALL
+          envFrom:
+            - secretRef:
+                name: {{ .Values.secrets.secretName | default (printf "%s-secret" (include "typesense.fullname" .)) }}
+                optional: {{ .Values.secrets.optional }}
+          env:
+            - name: TYPESENSE_HOST
+              value: "localhost"
+            - name: TYPESENSE_PORT
+              value: {{ .Values.service.port | quote }}
+            - name: EXPORTER_BIND_PORT
+              value: {{ .Values.metrics.port | quote }}
+          ports:
+            - name: metrics
+              containerPort: {{ .Values.metrics.port }}
+          resources: {{- toYaml .Values.metrics.resources | nindent 12 }}
+        {{- end }}
+      volumes:
+        - name: nodeslist
+          configMap:
+            name: {{ include "typesense.fullname" . }}-nodeslist
+            items:
+            - key: nodes
+              path: nodes
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+  volumeClaimTemplates:
+  - metadata:
+      name: {{ include "typesense.fullname" . }}-data
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      {{- with .Values.storage.className }}
+      storageClassName: {{ . }}
+      {{- end }}
+      resources:
+        requests:
+          storage: {{ .Values.storage.size }}

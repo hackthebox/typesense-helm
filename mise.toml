@@ -1,0 +1,54 @@
+[tools]
+helm = '3.15.2'
+helm-docs = '1.14.2'
+
+[tasks.test]
+description = 'Run helm-unittest'
+run = 'helm unittest .'
+alias = 't'
+
+[tasks.docs]
+description = 'Generate values.md and README.md documentation'
+run = '''
+helm-docs -c . -o values.md
+helm-docs -c . -t README.md.gotmpl -o README.md
+'''
+alias = 'd'
+
+[tasks.lint]
+description = 'Lint the Helm chart'
+run = 'helm lint .'
+
+[tasks.bump]
+description = 'Bump chart version (major, minor, patch, rc)'
+run = '''
+#!/usr/bin/env python3
+import subprocess, sys
+
+increment = sys.argv[1] if len(sys.argv) > 1 else "patch"
+result = subprocess.run(["yq", "e", ".version", "Chart.yaml"], capture_output=True, text=True)
+version = result.stdout.strip()
+print(f"Current version: {version}")
+
+rc = int(version.split("-")[1].replace("rc", "")) if "rc" in version else 0
+major, minor, patch = [int(i) for i in version.split("-")[0].split(".")]
+
+match increment:
+    case "major":
+        new_version = f"{major + 1}.0.0"
+    case "minor":
+        new_version = f"{major}.{minor + 1}.0"
+    case "patch":
+        new_version = f"{major}.{minor}.{patch + 1}"
+    case "rc":
+        new_version = f"{major}.{minor}.{patch}-rc{rc + 1}"
+    case _:
+        new_version = version
+
+print(f"New version: {new_version}")
+subprocess.run(["yq", "e", "-i", f'.version = "{new_version}"', "Chart.yaml"])
+'''
+
+[tasks.setup]
+description = 'Install Helm plugins (tools are managed by mise)'
+run = 'helm plugin install https://github.com/helm-unittest/helm-unittest.git'

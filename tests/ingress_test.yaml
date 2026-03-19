@@ -1,0 +1,150 @@
+suite: Networking
+chart:
+  version: 1.0.0
+release:
+  name: foo
+  namespace: bar
+set:
+  replicaCount: 3
+templates:
+  - ingress.yaml
+tests:
+  - it: should not render any ingress by default
+    asserts:
+      - notFailedTemplate: {}
+      - hasDocuments:
+          count: 0
+  - it: should render a proper ingress when enabled
+    set:
+      ingress:
+        enabled: true
+        hosts:
+          - search.example.com
+    asserts:
+      - notFailedTemplate: {}
+      - containsDocument:
+          apiVersion: networking.k8s.io/v1
+          kind: Ingress
+          name: foo-typesense
+          namespace: bar
+  - it: should support custom annotations
+    set:
+      ingress:
+        enabled: true
+        hosts:
+          - search.example.com
+        annotations:
+          cert-manager.io/cluster-issuer: letsencrypt-prod
+    asserts:
+      - isSubset:
+          path: .metadata.annotations
+          content:
+            cert-manager.io/cluster-issuer: letsencrypt-prod
+  - it: should have the proper spec when properly configured
+    set:
+      ingress:
+        enabled: true
+        hosts:
+          - search.example.com
+    asserts:
+      - equal:
+          path: .spec.ingressClassName
+          value: nginx
+      - lengthEqual:
+          path: .spec.tls
+          count: 1
+      - contains:
+          path: .spec.tls
+          content:
+            hosts:
+              - search.example.com
+            secretName: foo-typesense-tls
+      - lengthEqual:
+          path: .spec.rules
+          count: 1
+      - contains:
+          path: .spec.rules
+          content:
+            host: search.example.com
+            http:
+              paths:
+                - path: /
+                  pathType: Prefix
+                  backend:
+                    service:
+                      name: foo-typesense-svc
+                      port:
+                        number: 8108
+  - it: should support more than one hosts
+    set:
+      ingress:
+        enabled: true
+        hosts:
+          - search.example.com
+          - search-staging.example.com
+    asserts:
+      - lengthEqual:
+          path: .spec.tls
+          count: 1
+      - contains:
+          path: .spec.tls
+          content:
+            hosts:
+              - search.example.com
+              - search-staging.example.com
+            secretName: foo-typesense-tls
+          any: false
+          count: 1
+      - lengthEqual:
+          path: .spec.rules
+          count: 2
+      - contains:
+          path: .spec.rules
+          content:
+            host: search.example.com
+            http:
+              paths:
+                - path: /
+                  pathType: Prefix
+                  backend:
+                    service:
+                      name: foo-typesense-svc
+                      port:
+                        number: 8108
+      - contains:
+          path: .spec.rules
+          content:
+            host: search-staging.example.com
+            http:
+              paths:
+                - path: /
+                  pathType: Prefix
+                  backend:
+                    service:
+                      name: foo-typesense-svc
+                      port:
+                        number: 8108
+  - it: should be possible to provide an ingress class name
+    set:
+      ingress:
+        enabled: true
+        hosts:
+          - search.example.com
+        className: test-class
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: .spec.ingressClassName
+          value: test-class
+  - it: should be possible to override the prefix
+    set:
+      ingress:
+        enabled: true
+        hosts:
+          - search.example.com
+        prefix: /api/
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: .spec.rules[0].http.paths[0].path
+          value: /api/

@@ -1,0 +1,99 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_call:
+
+permissions:
+  contents: read
+  pull-requests: write
+  statuses: write
+
+env:
+  HELM_DOCS_VERSION: "1.14.2"
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Read Helm version
+        run: echo "HELM_VERSION=$(cat .helm-version)" >> "${GITHUB_ENV}"
+
+      - name: Install Helm
+        uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4 # v4.3.1
+        with:
+          version: ${{ env.HELM_VERSION }}
+
+      - name: Install helm-unittest plugin
+        run: helm plugin install https://github.com/helm-unittest/helm-unittest.git
+
+      - name: Lint
+        run: helm lint .
+
+      - name: Run unit tests
+        run: helm unittest .
+
+  check-docs:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Install helm-docs
+        run: |
+          mkdir -p "${HOME}/bin"
+          curl -sSL "https://github.com/norwoodj/helm-docs/releases/download/v${HELM_DOCS_VERSION}/helm-docs_${HELM_DOCS_VERSION}_Linux_x86_64.tar.gz" -o helm-docs.tar.gz
+          mkdir -p ./tmp-helm-docs
+          tar -xzf helm-docs.tar.gz -C ./tmp-helm-docs
+          mv ./tmp-helm-docs/helm-docs "${HOME}/bin/helm-docs"
+          chmod +x "${HOME}/bin/helm-docs"
+          rm -rf helm-docs.tar.gz ./tmp-helm-docs
+          echo "${HOME}/bin" >> "${GITHUB_PATH}"
+
+      - name: Check values.md is up-to-date
+        run: |
+          helm-docs --output-file=values.md
+          if ! git diff --quiet; then
+            echo "::error::values.md is out of date. Run 'mise run docs' and commit the changes."
+            git diff
+            exit 1
+          fi
+
+      - name: Check README.md is up-to-date
+        run: |
+          helm-docs -t README.md.gotmpl -o README.md
+          if ! git diff --quiet; then
+            echo "::error::README.md is out of date. Run 'mise run docs' and commit the changes."
+            git diff
+            exit 1
+          fi
+
+  pr-metrics:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: PR Metrics
+        uses: microsoft/PR-Metrics@385f800cf4f445faf414a317e48c591aa018c711 # v1.7.5
+        env:
+          PR_METRICS_ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          base-size: 200
+          growth-rate: 1.5
+          test-factor: 0.25
+          code-file-extensions: |
+            yml
+            yaml
+            tpl
+        continue-on-error: true

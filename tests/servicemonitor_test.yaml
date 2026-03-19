@@ -1,0 +1,61 @@
+suite: ServiceMonitor
+chart:
+  version: 1.0.0
+release:
+  name: foo
+  namespace: bar
+templates:
+  - servicemonitor.yaml
+tests:
+  - it: should not create ServiceMonitor by default
+    asserts:
+      - notFailedTemplate: {}
+      - hasDocuments:
+          count: 0
+  - it: should create ServiceMonitor when enabled
+    set:
+      metrics:
+        enabled: true
+        serviceMonitor:
+          enabled: true
+    asserts:
+      - notFailedTemplate: {}
+      - hasDocuments:
+          count: 1
+      - containsDocument:
+          apiVersion: monitoring.coreos.com/v1
+          kind: ServiceMonitor
+          name: foo-typesense
+          namespace: bar
+      - equal:
+          path: .spec.endpoints[0].port
+          value: metrics
+      - equal:
+          path: .spec.endpoints[0].interval
+          value: 30s
+  - it: should add extra labels to ServiceMonitor
+    set:
+      metrics:
+        enabled: true
+        serviceMonitor:
+          enabled: true
+          labels:
+            release: prometheus
+    asserts:
+      - notFailedTemplate: {}
+      - isSubset:
+          path: .metadata.labels
+          content:
+            release: prometheus
+  - it: should allow overriding scrape interval
+    set:
+      metrics:
+        enabled: true
+        serviceMonitor:
+          enabled: true
+          interval: 15s
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: .spec.endpoints[0].interval
+          value: 15s

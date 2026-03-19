@@ -1,0 +1,41 @@
+apiVersion: v2
+name: typesense
+description: >-
+  Deploy Typesense search engine on Kubernetes with Raft-based HA clustering,
+  Prometheus metrics, and Gateway API support. This chart is not officially
+  maintained by or affiliated with the Typesense project.
+type: application
+version: 1.0.0
+appVersion: "30.1"
+icon: https://typesense.org/typesense-logo.svg
+home: https://github.com/hackthebox/typesense-helm
+sources:
+  - https://github.com/hackthebox/typesense-helm
+  - https://typesense.org
+keywords:
+  - typesense
+  - search
+  - search-engine
+  - full-text-search
+  - statefulset
+  - raft
+maintainers:
+  - name: Hack The Box SRE
+    url: https://github.com/hackthebox
+kubeVersion: ">=1.26.0-0"
+annotations:
+  artifacthub.io/category: database
+  artifacthub.io/license: MIT
+  artifacthub.io/links: |
+    - name: Typesense Documentation
+      url: https://typesense.org/docs/
+    - name: support
+      url: https://github.com/hackthebox/typesense-helm/issues
+  artifacthub.io/images: |
+    - name: typesense
+      image: typesense/typesense:30.1
+    - name: metrics-exporter
+      image: imatefx/typesense-prometheus-exporter:v0.1.5
+  artifacthub.io/changes: |
+    - kind: added
+      description: Initial open-source release

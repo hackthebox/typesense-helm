@@ -1,0 +1,51 @@
+suite: PodDisruptionBudget
+chart:
+  version: 1.0.0
+release:
+  name: foo
+  namespace: bar
+templates:
+  - pdb.yaml
+tests:
+  - it: should not create PDB by default
+    asserts:
+      - notFailedTemplate: {}
+      - hasDocuments:
+          count: 0
+  - it: should create PDB when enabled
+    set:
+      pdb:
+        enabled: true
+    asserts:
+      - notFailedTemplate: {}
+      - hasDocuments:
+          count: 1
+      - containsDocument:
+          apiVersion: policy/v1
+          kind: PodDisruptionBudget
+          name: foo-typesense
+          namespace: bar
+      - equal:
+          path: .spec.maxUnavailable
+          value: 1
+  - it: should allow overriding maxUnavailable
+    set:
+      pdb:
+        enabled: true
+        maxUnavailable: 2
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: .spec.maxUnavailable
+          value: 2
+  - it: should use selector labels matching the StatefulSet
+    set:
+      pdb:
+        enabled: true
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: .spec.selector.matchLabels
+          value:
+            app.kubernetes.io/name: typesense
+            app.kubernetes.io/instance: foo

@@ -1,0 +1,120 @@
+suite: Networking
+chart:
+  version: 1.0.0
+release:
+  name: foo
+  namespace: bar
+set:
+  replicaCount: 3
+templates:
+  - service.yaml
+  - statefulset.yaml
+tests:
+  - it: should render the headless service by default with correct spec
+    template: service.yaml
+    asserts:
+      - notFailedTemplate: {}
+      - hasDocuments:
+          count: 1
+      - containsDocument:
+          apiVersion: v1
+          kind: Service
+          name: foo-typesense-headless-svc
+          namespace: bar
+      - equal:
+          path: .spec.publishNotReadyAddresses
+          value: true
+      - equal:
+          path: .spec.clusterIP
+          value: None
+      - contains:
+          path: .spec.ports
+          content:
+            port: 8108
+            targetPort: http
+            protocol: TCP
+            name: http
+      - contains:
+          path: .spec.ports
+          content:
+            port: 8107
+            targetPort: tcp-peering
+            protocol: TCP
+            name: tcp-peering
+  - it: should match the statefulset and pods selectors
+    asserts:
+      - equal:
+          path: .spec.selector
+          value:
+            app.kubernetes.io/name: typesense
+            app.kubernetes.io/instance: foo
+        template: service.yaml
+      - equal:
+          path: .spec.selector.matchLabels
+          value:
+            app.kubernetes.io/name: typesense
+            app.kubernetes.io/instance: foo
+        template: statefulset.yaml
+      - isSubset:
+          path: .spec.template.metadata.labels
+          content:
+            app.kubernetes.io/name: typesense
+            app.kubernetes.io/instance: foo
+        template: statefulset.yaml
+  - it: should render the service when ingress is enabled with correct spec
+    set:
+      ingress:
+        enabled: true
+    template: service.yaml
+    documentIndex: 0
+    asserts:
+      - notFailedTemplate: {}
+      - containsDocument:
+          apiVersion: v1
+          kind: Service
+          name: foo-typesense-svc
+          namespace: bar
+      - equal:
+          path: .spec.type
+          value: ClusterIP
+      - contains:
+          path: .spec.ports
+          content:
+            port: 8108
+            targetPort: http
+            protocol: TCP
+            name: http
+  - it: should render the service when gateway is enabled with correct spec
+    set:
+      gateway:
+        enabled: true
+    template: service.yaml
+    documentIndex: 0
+    asserts:
+      - notFailedTemplate: {}
+      - containsDocument:
+          apiVersion: v1
+          kind: Service
+          name: foo-typesense-svc
+          namespace: bar
+      - equal:
+          path: .spec.type
+          value: ClusterIP
+      - contains:
+          path: .spec.ports
+          content:
+            port: 8108
+            targetPort: http
+            protocol: TCP
+            name: http
+  - it: should be possible to override the service port for both services
+    set:
+      ingress:
+        enabled: true
+      service.port: 8080
+    template: service.yaml
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: .spec.ports[0].port
+          value: 8080

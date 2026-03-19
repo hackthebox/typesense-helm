@@ -1,0 +1,514 @@
+suite: App
+chart:
+  version: 1.0.0
+release:
+  name: foo
+  namespace: bar
+templates:
+  - statefulset.yaml
+tests:
+  - it: should render the statefulset by default with correct spec
+    asserts:
+      - notFailedTemplate: {}
+      - hasDocuments:
+          count: 1
+      - containsDocument:
+          apiVersion: apps/v1
+          kind: StatefulSet
+          name: foo-typesense
+          namespace: bar
+      - equal:
+          path: .spec.serviceName
+          value: foo-typesense-headless-svc
+      - equal:
+          path: .spec.replicas
+          value: 3
+      - equal:
+          path: .spec.template.metadata.labels
+          value:
+            helm.sh/chart: typesense-1.0.0
+            app.kubernetes.io/name: typesense
+            app.kubernetes.io/instance: foo
+            app.kubernetes.io/version: "30.1"
+            app.kubernetes.io/managed-by: Helm
+
+      - equal:
+          path: .spec.template.spec.securityContext
+          value:
+            fsGroup: 2000
+            runAsGroup: 3000
+            runAsNonRoot: true
+            runAsUser: 10000
+      - equal:
+          path: .spec.template.spec.containers[0].name
+          value: typesense
+      - equal:
+          path: spec.template.spec.containers[0].command[4]
+          value: "8108"
+      - equal:
+          path: .spec.template.spec.containers[0].ports
+          value:
+            - name: http
+              containerPort: 8108
+            - name: tcp-peering
+              containerPort: 8107
+      - equal:
+          path: .spec.template.spec.containers[0].startupProbe
+          value:
+            failureThreshold: 10
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+      - equal:
+          path: .spec.template.spec.containers[0].livenessProbe
+          value:
+            failureThreshold: 2
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+      - notExists:
+          path: .spec.volumeClaimTemplates[0].spec.storageClassName
+      - equal:
+          path: .spec.volumeClaimTemplates[0].spec.resources.requests.storage
+          value: 10Gi
+  - it: should be possible to override replicacount
+    set:
+      replicaCount: 5
+    asserts:
+      - notFailedTemplate: {}
+      - hasDocuments:
+          count: 1
+      - equal:
+          path: .spec.replicas
+          value: 5
+  - it: should reject even replica counts greater than 1
+    set:
+      replicaCount: 4
+    asserts:
+      - failedTemplate:
+          errorMessage: "replicaCount must be an odd number for Raft quorum (1, 3, 5, ...)"
+  - it: should allow replicaCount of 1
+    set:
+      replicaCount: 1
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: .spec.replicas
+          value: 1
+  - it: should be possible to override podSecurityContext
+    set:
+      podSecurityContext:
+        fsGroup: 1000
+        runAsUser: 5000
+        runAsGroup: 5000
+        runAsNonRoot: false
+    asserts:
+      - notFailedTemplate: {}
+      - hasDocuments:
+          count: 1
+      - equal:
+          path: .spec.template.spec.securityContext
+          value:
+            fsGroup: 1000
+            runAsUser: 5000
+            runAsGroup: 5000
+            runAsNonRoot: false
+  - it: should be possible to override service port
+    set:
+      service:
+        port: 1234
+    asserts:
+      - notFailedTemplate: {}
+      - hasDocuments:
+          count: 1
+      - equal:
+          path: spec.template.spec.containers[0].command[4]
+          value: "1234"
+      - equal:
+          path: .spec.template.spec.containers[0].ports
+          value:
+            - name: http
+              containerPort: 1234
+            - name: tcp-peering
+              containerPort: 8107
+  - it: should be possible to add resources
+    set:
+      resources:
+        requests:
+          cpu: "500m"
+          memory: "2Gi"
+        limits:
+          cpu: "1000m"
+          memory: "4Gi"
+    asserts:
+      - notFailedTemplate: {}
+      - hasDocuments:
+          count: 1
+      - equal:
+          path: .spec.template.spec.containers[0].resources
+          value:
+            requests:
+              cpu: "500m"
+              memory: "2Gi"
+            limits:
+              cpu: "1000m"
+              memory: "4Gi"
+  - it: should be possible to add nodeSelector
+    set:
+      nodeSelector:
+        karpenter.sh/nodepool: default
+    asserts:
+      - notFailedTemplate: {}
+      - hasDocuments:
+          count: 1
+      - equal:
+          path: .spec.template.spec.nodeSelector
+          value:
+            karpenter.sh/nodepool: default
+  - it: should be possible to override volumeClaimTemplates storage
+    set:
+      storage:
+        className: gp3
+        size: 100Mi
+    asserts:
+      - notFailedTemplate: {}
+      - hasDocuments:
+          count: 1
+      - equal:
+          path: .spec.volumeClaimTemplates[0].spec.storageClassName
+          value: gp3
+      - equal:
+          path: .spec.volumeClaimTemplates[0].spec.resources.requests.storage
+          value: 100Mi
+  - it: should reference the namespaced configmap for nodeslist
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: .spec.template.spec.volumes[0].configMap.name
+          value: foo-typesense-nodeslist
+  - it: should render imagePullPolicy from values
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: .spec.template.spec.containers[0].imagePullPolicy
+          value: IfNotPresent
+  - it: should be possible to override imagePullPolicy
+    set:
+      image:
+        pullPolicy: Always
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: .spec.template.spec.containers[0].imagePullPolicy
+          value: Always
+  - it: should mount the default secret with optional true
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: .spec.template.spec.containers[0].envFrom[0].secretRef.name
+          value: foo-typesense-secret
+      - equal:
+          path: .spec.template.spec.containers[0].envFrom[0].secretRef.optional
+          value: true
+  - it: should use custom secretName in envFrom when provided
+    set:
+      secrets:
+        secretName: my-custom-secret
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: .spec.template.spec.containers[0].envFrom[0].secretRef.name
+          value: my-custom-secret
+  - it: should allow disabling optional on secretRef
+    set:
+      secrets:
+        optional: false
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: .spec.template.spec.containers[0].envFrom[0].secretRef.optional
+          value: false
+  - it: should render container securityContext by default
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: .spec.template.spec.containers[0].securityContext
+          value:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+  - it: should add tolerations when provided
+    set:
+      tolerations:
+        - key: "dedicated"
+          operator: "Equal"
+          value: "search"
+          effect: "NoSchedule"
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: .spec.template.spec.tolerations
+          value:
+            - key: "dedicated"
+              operator: "Equal"
+              value: "search"
+              effect: "NoSchedule"
+  - it: should add affinity when provided
+    set:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app.kubernetes.io/name: typesense
+              topologyKey: kubernetes.io/hostname
+    asserts:
+      - notFailedTemplate: {}
+      - exists:
+          path: .spec.template.spec.affinity.podAntiAffinity
+  - it: should add topologySpreadConstraints when provided
+    set:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+    asserts:
+      - notFailedTemplate: {}
+      - lengthEqual:
+          path: .spec.template.spec.topologySpreadConstraints
+          count: 1
+  - it: should render readinessProbe by default
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: .spec.template.spec.containers[0].readinessProbe
+          value:
+            failureThreshold: 3
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 5
+  - it: should not render scheduling fields when empty
+    asserts:
+      - notFailedTemplate: {}
+      - notExists:
+          path: .spec.template.spec.tolerations
+      - notExists:
+          path: .spec.template.spec.affinity
+      - notExists:
+          path: .spec.template.spec.topologySpreadConstraints
+  - it: should reference the service account
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: .spec.template.spec.serviceAccountName
+          value: foo-typesense
+  - it: should render CORS flags when enabled
+    set:
+      typesense:
+        cors:
+          enabled: true
+          domains:
+            - "https://example.com"
+            - "https://app.example.com"
+    asserts:
+      - notFailedTemplate: {}
+      - contains:
+          path: .spec.template.spec.containers[0].command
+          content: "--enable-cors"
+      - contains:
+          path: .spec.template.spec.containers[0].command
+          content: "--cors-domains=https://example.com,https://app.example.com"
+  - it: should render analytics flags when enabled
+    set:
+      typesense:
+        analytics:
+          enabled: true
+          flushInterval: 1800
+    asserts:
+      - notFailedTemplate: {}
+      - contains:
+          path: .spec.template.spec.containers[0].command
+          content: "--enable-search-analytics"
+      - contains:
+          path: .spec.template.spec.containers[0].command
+          content: "--analytics-flush-interval=1800"
+  - it: should render cache and thread pool flags when set
+    set:
+      typesense:
+        cache:
+          numEntries: 5000
+        threadPoolSize: 32
+    asserts:
+      - notFailedTemplate: {}
+      - contains:
+          path: .spec.template.spec.containers[0].command
+          content: "--cache-num-entries=5000"
+      - contains:
+          path: .spec.template.spec.containers[0].command
+          content: "--thread-pool-size=32"
+  - it: should render limit and health flags when set
+    set:
+      typesense:
+        limits:
+          diskUsedMaxPercentage: 90
+          memoryUsedMaxPercentage: 85
+        health:
+          readLag: 2000
+          writeLag: 1000
+    asserts:
+      - notFailedTemplate: {}
+      - contains:
+          path: .spec.template.spec.containers[0].command
+          content: "--disk-used-max-percentage=90"
+      - contains:
+          path: .spec.template.spec.containers[0].command
+          content: "--memory-used-max-percentage=85"
+      - contains:
+          path: .spec.template.spec.containers[0].command
+          content: "--healthy-read-lag=2000"
+      - contains:
+          path: .spec.template.spec.containers[0].command
+          content: "--healthy-write-lag=1000"
+  - it: should render logging flags when set
+    set:
+      typesense:
+        logging:
+          slowRequestsTimeMs: 500
+          enableSearchLogging: true
+    asserts:
+      - notFailedTemplate: {}
+      - contains:
+          path: .spec.template.spec.containers[0].command
+          content: "--log-slow-requests-time-ms=500"
+      - contains:
+          path: .spec.template.spec.containers[0].command
+          content: "--enable-search-logging"
+  - it: should render snapshot interval when set
+    set:
+      typesense:
+        snapshots:
+          intervalSeconds: 7200
+    asserts:
+      - notFailedTemplate: {}
+      - contains:
+          path: .spec.template.spec.containers[0].command
+          content: "--snapshot-interval-seconds=7200"
+  - it: should not render optional flags when unset
+    asserts:
+      - notFailedTemplate: {}
+      - notContains:
+          path: .spec.template.spec.containers[0].command
+          content: "--enable-cors"
+      - notContains:
+          path: .spec.template.spec.containers[0].command
+          content: "--enable-search-analytics"
+      - notContains:
+          path: .spec.template.spec.containers[0].command
+          content: "--cache-num-entries"
+  - it: should append extraArgs to the command
+    set:
+      extraArgs:
+        - "--filter-by-max-ops=200"
+        - "--max-per-page=500"
+    asserts:
+      - notFailedTemplate: {}
+      - contains:
+          path: .spec.template.spec.containers[0].command
+          content: "--filter-by-max-ops=200"
+      - contains:
+          path: .spec.template.spec.containers[0].command
+          content: "--max-per-page=500"
+  - it: should add extraEnv to the container
+    set:
+      extraEnv:
+        - name: TYPESENSE_LOG_LEVEL
+          value: debug
+    asserts:
+      - notFailedTemplate: {}
+      - contains:
+          path: .spec.template.spec.containers[0].env
+          content:
+            name: TYPESENSE_LOG_LEVEL
+            value: debug
+  - it: should not add metrics sidecar by default
+    asserts:
+      - notFailedTemplate: {}
+      - lengthEqual:
+          path: .spec.template.spec.containers
+          count: 1
+  - it: should add metrics sidecar when enabled with correct defaults
+    set:
+      metrics:
+        enabled: true
+    asserts:
+      - notFailedTemplate: {}
+      - lengthEqual:
+          path: .spec.template.spec.containers
+          count: 2
+      - equal:
+          path: .spec.template.spec.containers[1].name
+          value: metrics-exporter
+      - equal:
+          path: .spec.template.spec.containers[1].image
+          value: "imatefx/typesense-prometheus-exporter:v0.1.5"
+      - equal:
+          path: .spec.template.spec.containers[1].imagePullPolicy
+          value: IfNotPresent
+      - equal:
+          path: .spec.template.spec.containers[1].ports[0].containerPort
+          value: 8888
+      - equal:
+          path: .spec.template.spec.containers[1].ports[0].name
+          value: metrics
+  - it: should harden metrics sidecar with securityContext
+    set:
+      metrics:
+        enabled: true
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: .spec.template.spec.containers[1].securityContext
+          value:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 10000
+            runAsGroup: 3000
+            capabilities:
+              drop:
+                - ALL
+  - it: should pass correct env vars to metrics sidecar
+    set:
+      metrics:
+        enabled: true
+    asserts:
+      - notFailedTemplate: {}
+      - contains:
+          path: .spec.template.spec.containers[1].env
+          content:
+            name: TYPESENSE_HOST
+            value: "localhost"
+      - contains:
+          path: .spec.template.spec.containers[1].env
+          content:
+            name: TYPESENSE_PORT
+            value: "8108"
+      - contains:
+          path: .spec.template.spec.containers[1].env
+          content:
+            name: EXPORTER_BIND_PORT
+            value: "8888"
+  - it: should share the typesense secret with metrics sidecar
+    set:
+      metrics:
+        enabled: true
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: .spec.template.spec.containers[1].envFrom[0].secretRef.name
+          value: foo-typesense-secret

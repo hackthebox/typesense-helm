@@ -1,0 +1,100 @@
+name: Release Chart
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
+      pull-requests: write
+      statuses: write
+
+  release:
+    runs-on: ubuntu-latest
+    needs: ci
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Read Helm version
+        run: echo "HELM_VERSION=$(cat .helm-version)" >> "${GITHUB_ENV}"
+
+      - name: Install Helm
+        uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4 # v4.3.1
+        with:
+          version: ${{ env.HELM_VERSION }}
+
+      - name: Login to GHCR
+        env:
+          HELM_REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HELM_REGISTRY_USER: ${{ github.actor }}
+        run: echo "${HELM_REGISTRY_TOKEN}" | helm registry login "${REGISTRY}" -u "${HELM_REGISTRY_USER}" --password-stdin
+
+      - name: Extract chart metadata
+        id: chart
+        run: |
+          VERSION=$(grep '^version:' Chart.yaml | awk '{print $2}')
+          NAME=$(grep '^name:' Chart.yaml | awk '{print $2}')
+          echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
+          echo "name=${NAME}" >> "${GITHUB_OUTPUT}"
+
+      - name: Verify tag matches chart version
+        env:
+          TAG_REF: ${{ github.ref_name }}
+          CHART_VERSION: ${{ steps.chart.outputs.version }}
+        run: |
+          TAG_VERSION="${TAG_REF#v}"
+          if [ "${TAG_VERSION}" != "${CHART_VERSION}" ]; then
+            echo "::error::Tag version (${TAG_VERSION}) does not match Chart.yaml version (${CHART_VERSION})"
+            exit 1
+          fi
+
+      - name: Package chart
+        run: helm package .
+
+      - name: Push chart to GHCR
+        env:
+          CHART_NAME: ${{ steps.chart.outputs.name }}
+          CHART_VERSION: ${{ steps.chart.outputs.version }}
+          REPO_OWNER: ${{ github.repository_owner }}
+        run: helm push "${CHART_NAME}-${CHART_VERSION}.tgz" "oci://${REGISTRY}/${REPO_OWNER}/helm"
+
+      - name: Summary
+        env:
+          CHART_NAME: ${{ steps.chart.outputs.name }}
+          CHART_VERSION: ${{ steps.chart.outputs.version }}
+          REPO_OWNER: ${{ github.repository_owner }}
+        run: |
+          echo "### Chart Published" >> "${GITHUB_STEP_SUMMARY}"
+          echo "" >> "${GITHUB_STEP_SUMMARY}"
+          echo "- **Chart:** ${CHART_NAME}" >> "${GITHUB_STEP_SUMMARY}"
+          echo "- **Version:** ${CHART_VERSION}" >> "${GITHUB_STEP_SUMMARY}"
+          echo "- **OCI:** \`oci://${REGISTRY}/${REPO_OWNER}/helm/${CHART_NAME}:${CHART_VERSION}\`" >> "${GITHUB_STEP_SUMMARY}"
+
+  create-release:
+    runs-on: ubuntu-latest
+    needs: release
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe # v2.6.1
+        with:
+          generate_release_notes: true
+          make_latest: true

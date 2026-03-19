@@ -1,0 +1,36 @@
+Typesense {{ .Chart.AppVersion }} has been deployed with {{ .Values.replicaCount }} replica(s).
+
+DISCLAIMER: This Helm chart is maintained by Hack The Box and is not officially
+affiliated with or endorsed by the Typesense project. It is provided on a
+best-effort basis with no guarantees. Use at your own risk.
+
+Raft quorum requires {{ div (add1 .Values.replicaCount) 2 }} of {{ .Values.replicaCount }} nodes to be available.
+
+To access the Typesense API:
+
+  kubectl port-forward svc/{{ include "typesense.fullname" . }}-headless-svc {{ .Values.service.port }}:{{ .Values.service.port }} -n {{ .Release.Namespace }}
+
+To retrieve the API key:
+
+  kubectl get secret {{ .Values.secrets.secretName | default (printf "%s-secret" (include "typesense.fullname" .)) }} -n {{ .Release.Namespace }} -o jsonpath='{.data.TYPESENSE_API_KEY}' | base64 -d
+
+To check cluster health:
+
+  curl http://localhost:{{ .Values.service.port }}/health
+
+{{- if and (gt (int .Values.replicaCount) 1) (not .Values.pdb.enabled) }}
+
+WARNING: You are running {{ .Values.replicaCount }} replicas without a PodDisruptionBudget.
+         Consider enabling pdb.enabled=true to protect Raft quorum during node maintenance.
+{{- end }}
+{{- if eq (int .Values.replicaCount) 3 }}
+
+NOTE: A 3-replica cluster tolerates only 1 node failure before losing quorum.
+      For production workloads, consider 5 replicas for improved fault tolerance.
+{{- end }}
+{{- if and .Values.ingress.enabled .Values.gateway.enabled }}
+
+WARNING: Both ingress.enabled and gateway.enabled are set to true.
+         This will create both an Ingress and an HTTPRoute resource, which may
+         cause duplicate routing. Unless this is intentional, disable one of them.
+{{- end }}

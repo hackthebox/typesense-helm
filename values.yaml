@@ -1,0 +1,320 @@
+# Default values for typesense.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# @schema
+# type: integer
+# minimum: 1
+# @schema
+# -- Number of replicas for the Typesense deployment
+replicaCount: 3
+
+image:
+  # -- Docker image repository for Typesense
+  repository: typesense/typesense
+  # @schema
+  # enum: [Always, IfNotPresent, Never]
+  # @schema
+  # -- Image pull policy (Always, IfNotPresent, etc.)
+  pullPolicy: IfNotPresent
+  # -- Overrides the image tag. If left empty, it uses the appVersion from Chart.yaml
+  tag: ""
+
+# -- Override the name of the release (optional)
+nameOverride: ""
+# -- Override the full name of the release (optional)
+fullnameOverride: ""
+
+# -- Termination grace period in seconds. Typesense recommends 300s to allow graceful shutdown.
+terminationGracePeriodSeconds: 300
+
+# -- Additional annotations to add to the Typesense pod(s)
+podAnnotations: {}
+# -- Additional labels to add to the Typesense pod(s)
+podLabels: {}
+
+podSecurityContext:
+  # -- Group ID for the filesystem of the Typesense container
+  fsGroup: 2000
+  # -- User ID for running the Typesense process
+  runAsUser: 10000
+  # -- Group ID for running the Typesense process
+  runAsGroup: 3000
+  # -- Ensure the container does not run as root
+  runAsNonRoot: true
+
+securityContext:
+  # -- Prevent privilege escalation
+  allowPrivilegeEscalation: false
+  # -- Read-only root filesystem (Typesense only writes to data PVC)
+  readOnlyRootFilesystem: true
+  # -- Drop all Linux capabilities
+  capabilities:
+    drop:
+      - ALL
+
+service:
+  # -- Kubernetes service type (ClusterIP, NodePort, LoadBalancer)
+  type: ClusterIP
+  # @schema
+  # type: integer
+  # minimum: 1
+  # maximum: 65535
+  # @schema
+  # -- Port that the Typesense service will listen on
+  port: 8108
+
+ingress:
+  # -- Enable or disable Ingress for the application
+  enabled: false
+  # -- The name of the Ingress class to use (e.g., nginx)
+  className: "nginx"
+  # -- Extra annotations to add to the Ingress resource
+  annotations: {}
+  # -- List of hostnames the Ingress will route traffic for
+  hosts: []
+  # -- The URL path prefix for the application
+  prefix: "/"
+
+gateway:
+  # -- Enable or disable Gateway API for the application
+  enabled: false
+  # -- List of hostnames the Gateway will route traffic for
+  hosts: []
+  # -- The URL path prefix for the application
+  prefix: "/"
+  # @schema
+  # properties:
+  #   default:
+  #     type: object
+  #     description: The default Gateway reference this HTTPRoute attaches to.
+  #     properties:
+  #       name:
+  #         type: string
+  #         description: Name of the Gateway.
+  #       namespace:
+  #         type: string
+  #         description: Namespace of the Gateway.
+  #         default: istio-system
+  #     required: [name]
+  #   extras:
+  #     type: array
+  #     description: Additional Gateway references.
+  #     items:
+  #       type: object
+  #       properties:
+  #         name:
+  #           type: string
+  #           description: Name of the Gateway.
+  #         namespace:
+  #           type: string
+  #           description: Namespace of the Gateway.
+  #           default: istio-system
+  #       required: [name]
+  # @schema
+  # -- (object) Configuration controlling which Gateway(s) this HTTPRoute attaches to.
+  parentRefs:
+    default:
+      name: ""
+      namespace: "istio-system"
+    extras: []
+
+# -- Resource requests and limits for the Typesense container
+resources: {}
+
+livenessProbe:
+  # -- HTTP GET path and port to check Typesense health for liveness
+  httpGet:
+    path: /health
+    port: http
+  # -- Number of failed liveness checks before restarting the container
+  failureThreshold: 2
+  # -- Period (in seconds) to perform the liveness check
+  periodSeconds: 10
+
+startupProbe:
+  # -- HTTP GET path and port to check Typesense health for startup
+  httpGet:
+    path: /health
+    port: http
+  # -- Number of failed startup checks before marking the container as unhealthy
+  failureThreshold: 10
+  # -- Period (in seconds) to perform the startup check
+  periodSeconds: 10
+
+readinessProbe:
+  # -- HTTP GET path and port to check Typesense readiness
+  httpGet:
+    path: /health
+    port: http
+  # -- Period (in seconds) to perform the readiness check
+  periodSeconds: 5
+  # -- Number of failed readiness checks before marking the pod as unready
+  failureThreshold: 3
+
+# -- Node selector to schedule pods on specific nodes (optional)
+nodeSelector: {}
+# -- Tolerations for pod scheduling
+tolerations: []
+# -- Affinity rules for pod scheduling
+affinity: {}
+# -- Topology spread constraints for pod distribution across nodes/zones
+topologySpreadConstraints: []
+
+pdb:
+  # @schema
+  # type: boolean
+  # @schema
+  # -- Enable PodDisruptionBudget for Typesense StatefulSet
+  enabled: false
+  # @schema
+  # type: integer
+  # minimum: 1
+  # @schema
+  # -- Maximum number of pods that can be unavailable during disruption
+  maxUnavailable: 1
+
+storage:
+  # -- Storage class to use for Persistent Volume Claims (PVC)
+  className:
+  # @schema
+  # type: string
+  # @schema
+  # -- Size of the persistent storage volume (e.g., 10Gi)
+  size: 10Gi
+
+secrets:
+  # -- Name of the Kubernetes Secret to mount via envFrom. Defaults to <fullname>-secret
+  secretName: ""
+  # @schema
+  # type: boolean
+  # @schema
+  # -- Whether the secretRef in envFrom is optional (pods start even if secret is missing)
+  optional: true
+  externalSecret:
+    # -- Enable or disable ExternalSecret creation (requires external-secrets operator)
+    enabled: false
+    # -- The name of the ClusterSecretStore or SecretStore to use
+    storeName: ""
+    # -- The key path to extract secrets from
+    extractKey: ""
+
+typesense:
+  cors:
+    # -- Enable CORS for browser/JS access
+    enabled: false
+    # -- List of allowed origins (no trailing slashes)
+    domains: []
+  cache:
+    # @schema
+    # type: integer
+    # minimum: 0
+    # @schema
+    # -- LRU cache size for search responses. Unset uses Typesense default (1000)
+    numEntries:
+  analytics:
+    # -- Enable aggregated search query analytics
+    enabled: false
+    # @schema
+    # type: integer
+    # minimum: 1
+    # @schema
+    # -- How often analytics are persisted to disk in seconds. Unset uses Typesense default (3600)
+    flushInterval:
+  snapshots:
+    # @schema
+    # type: integer
+    # minimum: 1
+    # @schema
+    # -- Replication log snapshot frequency in seconds. Unset uses Typesense default (3600)
+    intervalSeconds:
+  # @schema
+  # type: integer
+  # minimum: 1
+  # @schema
+  # -- Concurrent request handler threads. Unset uses Typesense default (NUM_CORES * 8)
+  threadPoolSize:
+  limits:
+    # @schema
+    # type: integer
+    # minimum: 0
+    # maximum: 100
+    # @schema
+    # -- Reject writes above this disk usage percentage. Unset uses Typesense default (100)
+    diskUsedMaxPercentage:
+    # @schema
+    # type: integer
+    # minimum: 0
+    # maximum: 100
+    # @schema
+    # -- Reject writes above this memory usage percentage. Unset uses Typesense default (100)
+    memoryUsedMaxPercentage:
+  health:
+    # @schema
+    # type: integer
+    # minimum: 0
+    # @schema
+    # -- Update lag threshold before rejecting reads. Unset uses Typesense default (1000)
+    readLag:
+    # @schema
+    # type: integer
+    # minimum: 0
+    # @schema
+    # -- Update lag threshold before rejecting writes. Unset uses Typesense default (500)
+    writeLag:
+  logging:
+    # @schema
+    # type: integer
+    # @schema
+    # -- Threshold in ms for slow request logging (-1 disables). Unset uses Typesense default (-1)
+    slowRequestsTimeMs:
+    # -- Log search request payloads
+    enableSearchLogging: false
+
+# -- Extra command-line arguments for Typesense server (e.g., ["--filter-by-max-ops=200"])
+extraArgs: []
+# -- Extra environment variables for the Typesense container
+extraEnv: []
+
+serviceAccount:
+  # @schema
+  # type: boolean
+  # @schema
+  # -- Whether to create a ServiceAccount
+  create: true
+  # -- Name of the ServiceAccount. Defaults to fullname
+  name: ""
+  # -- Annotations to add to the ServiceAccount (e.g., for IRSA)
+  annotations: {}
+  # -- Whether to automount the ServiceAccount token
+  automountServiceAccountToken: false
+
+metrics:
+  # @schema
+  # type: boolean
+  # @schema
+  # -- Enable Prometheus metrics sidecar
+  enabled: false
+  image:
+    # -- Metrics exporter image repository
+    repository: imatefx/typesense-prometheus-exporter
+    # -- Metrics exporter image tag
+    tag: "v0.1.5"
+    # -- Image pull policy for metrics exporter
+    pullPolicy: IfNotPresent
+  # @schema
+  # type: integer
+  # minimum: 1
+  # maximum: 65535
+  # @schema
+  # -- Port for Prometheus metrics endpoint
+  port: 8888
+  # -- Resource requests and limits for the metrics sidecar
+  resources: {}
+  serviceMonitor:
+    # -- Enable ServiceMonitor for Prometheus scraping
+    enabled: false
+    # -- Scrape interval
+    interval: 30s
+    # -- Additional labels for ServiceMonitor
+    labels: {}

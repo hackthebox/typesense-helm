@@ -1,0 +1,47 @@
+{{- if or .Values.ingress.enabled .Values.gateway.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "typesense.fullname" . }}-svc
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "typesense.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "typesense.selectorLabels" . | nindent 4 }}
+{{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "typesense.fullname" . }}-headless-svc
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "typesense.labels" . | nindent 4 }}
+    typesense.io/service-type: headless
+spec:
+  publishNotReadyAddresses: true
+  clusterIP: None
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+    - port: 8107
+      targetPort: tcp-peering
+      protocol: TCP
+      name: tcp-peering
+    {{- if .Values.metrics.enabled }}
+    - port: {{ .Values.metrics.port }}
+      targetPort: metrics
+      protocol: TCP
+      name: metrics
+    {{- end }}
+  selector:
+    {{- include "typesense.selectorLabels" . | nindent 4 }}

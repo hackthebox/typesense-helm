@@ -1,0 +1,148 @@
+suite: HTTPRoute tests
+
+templates:
+  - templates/httproute.yaml
+
+tests:
+  - it: should not render any HTTPRoute by default
+    asserts:
+      - notFailedTemplate: {}
+      - hasDocuments:
+          count: 0
+
+  - it: should render a proper HTTPRoute when enabled with a single host
+    set:
+      gateway:
+        enabled: true
+        hosts:
+          - search.example.com
+        prefix: /
+        parentRefs:
+          default:
+            name: my-gateway
+      service:
+        port: 8108
+    release:
+      name: foo-typesense
+      namespace: bar
+    asserts:
+      - notFailedTemplate: {}
+      - containsDocument:
+          apiVersion: gateway.networking.k8s.io/v1
+          kind: HTTPRoute
+          name: foo-typesense
+          namespace: bar
+      - equal:
+          path: .spec.parentRefs[0].name
+          value: my-gateway
+      - equal:
+          path: .spec.parentRefs[0].namespace
+          value: istio-system
+      - notExists:
+          path: .spec.parentRefs[1].name
+      - notExists:
+          path: .spec.parentRefs[1].namespace
+      - lengthEqual:
+          path: .spec.hostnames
+          count: 1
+      - contains:
+          path: .spec.hostnames
+          content: search.example.com
+      - equal:
+          path: .spec.rules[0].matches[0].path.value
+          value: /
+      - equal:
+          path: .spec.rules[0].backendRefs[0].name
+          value: foo-typesense-svc
+      - equal:
+          path: .spec.rules[0].backendRefs[0].port
+          value: 8108
+
+  - it: should support multiple hostnames
+    set:
+      gateway:
+        enabled: true
+        hosts:
+          - search.example.com
+          - search-staging.example.com
+        prefix: /
+        parentRefs:
+          default:
+            name: my-gateway
+      service:
+        port: 8108
+    release:
+      name: foo-typesense
+      namespace: bar
+    asserts:
+      - notFailedTemplate: {}
+      - containsDocument:
+          apiVersion: gateway.networking.k8s.io/v1
+          kind: HTTPRoute
+          name: foo-typesense
+          namespace: bar
+      - lengthEqual:
+          path: .spec.hostnames
+          count: 2
+      - contains:
+          path: .spec.hostnames
+          content: search.example.com
+      - contains:
+          path: .spec.hostnames
+          content: search-staging.example.com
+      - lengthEqual:
+          path: .spec.rules
+          count: 1
+      - equal:
+          path: .spec.rules[0].matches[0].path.value
+          value: /
+      - equal:
+          path: .spec.rules[0].backendRefs[0].name
+          value: foo-typesense-svc
+      - equal:
+          path: .spec.rules[0].backendRefs[0].port
+          value: 8108
+
+  - it: should support custom parentRef namespace
+    set:
+      gateway:
+        enabled: true
+        hosts:
+          - search.example.com
+        parentRefs:
+          default:
+            name: my-gateway
+            namespace: gateway-system
+    asserts:
+      - equal:
+          path: .spec.parentRefs[0].name
+          value: my-gateway
+      - equal:
+          path: .spec.parentRefs[0].namespace
+          value: gateway-system
+
+  - it: should support multiple parentRefs
+    set:
+      gateway:
+        enabled: true
+        hosts:
+          - search.example.com
+        prefix: /custom/path
+        parentRefs:
+          default:
+            name: my-gateway
+          extras:
+            - name: gateway-extra
+    asserts:
+      - equal:
+          path: .spec.parentRefs[0].name
+          value: my-gateway
+      - equal:
+          path: .spec.parentRefs[0].namespace
+          value: istio-system
+      - equal:
+          path: .spec.parentRefs[1].name
+          value: gateway-extra
+      - equal:
+          path: .spec.parentRefs[1].namespace
+          value: istio-system

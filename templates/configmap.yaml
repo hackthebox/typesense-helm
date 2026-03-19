@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "typesense.fullname" . }}-nodeslist
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "typesense.labels" . | nindent 4 }}
+data:
+  nodes: {{ include "typesense.nodesList" . }}

@@ -1,0 +1,25 @@
+suite: Configuration
+chart:
+  version: 1.0.0
+release:
+  name: foo
+  namespace: bar
+set:
+  replicaCount: 3
+templates:
+  - configmap.yaml
+tests:
+  - it: should render the configmap by default
+    template: configmap.yaml
+    asserts:
+      - notFailedTemplate: {}
+      - hasDocuments:
+          count: 1
+      - containsDocument:
+          apiVersion: v1
+          kind: ConfigMap
+          name: foo-typesense-nodeslist
+          namespace: bar
+      - equal:
+          path: .data.nodes
+          value: foo-typesense-0.foo-typesense-headless-svc.bar.svc.cluster.local:8107:8108,foo-typesense-1.foo-typesense-headless-svc.bar.svc.cluster.local:8107:8108,foo-typesense-2.foo-typesense-headless-svc.bar.svc.cluster.local:8107:8108
