@@ -318,3 +318,35 @@ metrics:
     interval: 30s
     # -- Additional labels for ServiceMonitor
     labels: {}
+
+backup:
+  # @schema
+  # type: boolean
+  # @schema
+  # -- Enable the backup sidecar. Requires backup.image and restic env vars to be configured.
+  enabled: false
+  # -- Cron schedule for backups (cron format)
+  schedule: "0 2 * * *"
+  image:
+    # -- Backup sidecar image. Defaults to the official restic image which includes wget and crond via BusyBox.
+    repository: ghcr.io/restic/restic
+    # -- Image tag
+    tag: "0.18.1"
+    # -- Image pull policy
+    pullPolicy: IfNotPresent
+  retention:
+    # @schema
+    # type: integer
+    # minimum: 1
+    # @schema
+    # -- Number of most recent restic snapshots to keep
+    keepLast: 7
+  # -- Extra env vars for the backup sidecar (e.g. RESTIC_REPOSITORY, AWS_ACCESS_KEY_ID)
+  env: []
+  # -- References to existing Secrets/ConfigMaps to inject into the backup sidecar
+  envFrom: []
+  # -- Resource requests and limits for the backup sidecar
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
