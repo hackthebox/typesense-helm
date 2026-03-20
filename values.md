@@ -1,6 +1,6 @@
 # typesense
 
-![Version: 1.0.0](https://img.shields.io/badge/Version-1.0.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 30.1](https://img.shields.io/badge/AppVersion-30.1-informational?style=flat-square)
+![Version: 1.1.0](https://img.shields.io/badge/Version-1.1.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 30.1](https://img.shields.io/badge/AppVersion-30.1-informational?style=flat-square)
 
 [![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/typesense)](https://artifacthub.io/packages/search?repo=typesense)
 
@@ -217,7 +217,7 @@ storage:
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| affinity | object | `{}` | Affinity rules for pod scheduling |
+| affinity | object | `{}` | Affinity rules for pod scheduling. When unset or empty and replicaCount > 1, a soft pod anti-affinity on kubernetes.io/hostname is automatically applied. Set to a non-empty affinity object to override this default behavior. |
 | extraArgs | list | `[]` | Extra command-line arguments for Typesense server (e.g., ["--filter-by-max-ops=200"]) |
 | extraEnv | list | `[]` | Extra environment variables for the Typesense container |
 | fullnameOverride | string | `""` | Override the full name of the release (optional) |
@@ -247,8 +247,8 @@ storage:
 | metrics.serviceMonitor.labels | object | `{}` | Additional labels for ServiceMonitor |
 | nameOverride | string | `""` | Override the name of the release (optional) |
 | nodeSelector | object | `{}` | Node selector to schedule pods on specific nodes (optional) |
-| pdb.enabled | bool | `false` | Enable PodDisruptionBudget for Typesense StatefulSet |
-| pdb.maxUnavailable | int | `1` | Maximum number of pods that can be unavailable during disruption |
+| pdb.enabled | bool | `true` | Enable PodDisruptionBudget for Typesense StatefulSet. Automatically skipped when replicaCount is 1. |
+| pdb.maxUnavailable | string/int | `"auto"` | Maximum number of pods that can be unavailable during disruption. Set to "auto" (default) to auto-calculate as floor(replicaCount/2), preserving Raft quorum. Set to 0 to block all voluntary disruptions. Any positive value is used directly and must not exceed floor(replicaCount/2). |
 | podAnnotations | object | `{}` | Additional annotations to add to the Typesense pod(s) |
 | podLabels | object | `{}` | Additional labels to add to the Typesense pod(s) |
 | podSecurityContext.fsGroup | int | `2000` | Group ID for the filesystem of the Typesense container |
@@ -295,6 +295,9 @@ storage:
 | typesense.logging.slowRequestsTimeMs | string | `nil` | Threshold in ms for slow request logging (-1 disables). Unset uses Typesense default (-1) |
 | typesense.snapshots.intervalSeconds | string | `nil` | Replication log snapshot frequency in seconds. Unset uses Typesense default (3600) |
 | typesense.threadPoolSize | string | `nil` | Concurrent request handler threads. Unset uses Typesense default (NUM_CORES * 8) |
+| updateStrategy | object | `{"rollingUpdate":{"maxUnavailable":"auto"},"type":"RollingUpdate"}` | StatefulSet update strategy configuration. When type is RollingUpdate, rollingUpdate.maxUnavailable is required. When type is OnDelete, rollingUpdate is optional and ignored. |
+| updateStrategy.rollingUpdate.maxUnavailable | string/int | `"auto"` | Maximum number of pods that can be unavailable during a rolling update. Set to "auto" (default) to auto-calculate as floor(replicaCount/2), preserving Raft quorum. Set to 0 to block all voluntary pod replacements. Any positive value is used directly and must not exceed floor(replicaCount/2). Ignored when updateStrategy.type is OnDelete. |
+| updateStrategy.type | string | `"RollingUpdate"` | StatefulSet update strategy type. Use RollingUpdate (default) for zero-downtime upgrades or OnDelete for manual pod-by-pod control. |
 
 ## Upgrading
 

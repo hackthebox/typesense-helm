@@ -13,6 +13,30 @@ spec:
   serviceName: {{ include "typesense.fullname" . }}-headless-svc
   podManagementPolicy: Parallel
   replicas: {{ .Values.replicaCount }}
+  updateStrategy:
+    {{- if not (or (eq .Values.updateStrategy.type "RollingUpdate") (eq .Values.updateStrategy.type "OnDelete")) }}
+    {{- fail (printf "updateStrategy.type must be RollingUpdate or OnDelete, got %q" .Values.updateStrategy.type) }}
+    {{- end }}
+    type: {{ .Values.updateStrategy.type }}
+    {{- if eq .Values.updateStrategy.type "RollingUpdate" }}
+    {{- $replicaCount := int .Values.replicaCount }}
+    {{- $maxFault := div $replicaCount 2 }}
+    {{- $maxUnavailable := .Values.updateStrategy.rollingUpdate.maxUnavailable }}
+    {{- if and (kindIs "string" $maxUnavailable) (eq $maxUnavailable "auto") }}
+      {{- if gt $replicaCount 1 }}
+        {{- $maxUnavailable = $maxFault }}
+      {{- else }}
+        {{- $maxUnavailable = 1 }}
+      {{- end }}
+    {{- else }}
+      {{- $maxUnavailable = int $maxUnavailable }}
+      {{- if and (gt $replicaCount 1) (gt $maxUnavailable $maxFault) }}
+        {{- fail (printf "updateStrategy.rollingUpdate.maxUnavailable (%d) exceeds Raft fault tolerance for replicaCount %d (max: floor(%d/2) = %d)" $maxUnavailable $replicaCount $replicaCount $maxFault) }}
+      {{- end }}
+    {{- end }}
+    rollingUpdate:
+      maxUnavailable: {{ $maxUnavailable }}
+    {{- end }}
   selector:
     matchLabels:
       {{- include "typesense.selectorLabels" . | nindent 6 }}
@@ -155,9 +179,19 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.affinity }}
+      {{- if .Values.affinity }}
       affinity:
-        {{- toYaml . | nindent 8 }}
+        {{- toYaml .Values.affinity | nindent 8 }}
+      {{- else if gt (int .Values.replicaCount) 1 }}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    {{- include "typesense.selectorLabels" . | nindent 20 }}
+                topologyKey: kubernetes.io/hostname
       {{- end }}
       {{- with .Values.topologySpreadConstraints }}
       topologySpreadConstraints:

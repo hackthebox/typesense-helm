@@ -1,6 +1,4 @@
 suite: App
-chart:
-  version: 1.0.0
 release:
   name: foo
   namespace: bar
@@ -23,14 +21,16 @@ tests:
       - equal:
           path: .spec.replicas
           value: 3
-      - equal:
+      - isSubset:
           path: .spec.template.metadata.labels
-          value:
-            helm.sh/chart: typesense-1.0.0
+          content:
             app.kubernetes.io/name: typesense
             app.kubernetes.io/instance: foo
             app.kubernetes.io/version: "30.1"
             app.kubernetes.io/managed-by: Helm
+      - matchRegex:
+          path: .spec.template.metadata.labels["helm.sh/chart"]
+          pattern: ^typesense-\d+\.\d+\.\d+$
 
       - equal:
           path: .spec.template.spec.securityContext
@@ -292,13 +292,13 @@ tests:
               path: /health
               port: http
             periodSeconds: 5
-  - it: should not render scheduling fields when empty
+  - it: should render default anti-affinity but not tolerations or topologySpreadConstraints when empty
     asserts:
       - notFailedTemplate: {}
+      - exists:
+          path: .spec.template.spec.affinity
       - notExists:
           path: .spec.template.spec.tolerations
-      - notExists:
-          path: .spec.template.spec.affinity
       - notExists:
           path: .spec.template.spec.topologySpreadConstraints
   - it: should reference the service account
@@ -512,3 +512,153 @@ tests:
       - equal:
           path: .spec.template.spec.containers[1].envFrom[0].secretRef.name
           value: foo-typesense-secret
+
+  - it: should render RollingUpdate strategy with auto-calculated maxUnavailable by default
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: .spec.updateStrategy.type
+          value: RollingUpdate
+      - equal:
+          path: .spec.updateStrategy.rollingUpdate.maxUnavailable
+          value: 1
+
+  - it: should auto-calculate updateStrategy maxUnavailable for 5 replicas
+    set:
+      replicaCount: 5
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: .spec.updateStrategy.rollingUpdate.maxUnavailable
+          value: 2
+
+  - it: should render maxUnavailable 1 for replicaCount 1
+    set:
+      replicaCount: 1
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: .spec.updateStrategy.type
+          value: RollingUpdate
+      - equal:
+          path: .spec.updateStrategy.rollingUpdate.maxUnavailable
+          value: 1
+
+  - it: should auto-calculate updateStrategy maxUnavailable when set to auto
+    set:
+      replicaCount: 5
+      updateStrategy:
+        type: RollingUpdate
+        rollingUpdate:
+          maxUnavailable: auto
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: .spec.updateStrategy.rollingUpdate.maxUnavailable
+          value: 2
+
+  - it: should allow updateStrategy maxUnavailable 0 to block all voluntary replacements
+    set:
+      updateStrategy:
+        type: RollingUpdate
+        rollingUpdate:
+          maxUnavailable: 0
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: .spec.updateStrategy.rollingUpdate.maxUnavailable
+          value: 0
+
+  - it: should allow overriding updateStrategy maxUnavailable within quorum bounds
+    set:
+      replicaCount: 5
+      updateStrategy:
+        type: RollingUpdate
+        rollingUpdate:
+          maxUnavailable: 1
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: .spec.updateStrategy.rollingUpdate.maxUnavailable
+          value: 1
+
+  - it: should reject updateStrategy maxUnavailable exceeding Raft fault tolerance
+    set:
+      replicaCount: 3
+      updateStrategy:
+        type: RollingUpdate
+        rollingUpdate:
+          maxUnavailable: 2
+    asserts:
+      - failedTemplate:
+          errorMessage: "updateStrategy.rollingUpdate.maxUnavailable (2) exceeds Raft fault tolerance for replicaCount 3 (max: floor(3/2) = 1)"
+
+  - it: should render OnDelete strategy without rollingUpdate block
+    set:
+      updateStrategy:
+        type: OnDelete
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: .spec.updateStrategy.type
+          value: OnDelete
+      - notExists:
+          path: .spec.updateStrategy.rollingUpdate
+
+  - it: should inject default soft anti-affinity for multi-node clusters
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: .spec.template.spec.affinity
+          value:
+            podAntiAffinity:
+              preferredDuringSchedulingIgnoredDuringExecution:
+                - weight: 100
+                  podAffinityTerm:
+                    labelSelector:
+                      matchLabels:
+                        app.kubernetes.io/name: typesense
+                        app.kubernetes.io/instance: foo
+                    topologyKey: kubernetes.io/hostname
+
+  - it: should not inject anti-affinity when replicaCount is 1
+    set:
+      replicaCount: 1
+    asserts:
+      - notFailedTemplate: {}
+      - notExists:
+          path: .spec.template.spec.affinity
+
+  - it: should use user-provided affinity instead of default when set
+    set:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app.kubernetes.io/name: typesense
+              topologyKey: kubernetes.io/hostname
+    asserts:
+      - notFailedTemplate: {}
+      - exists:
+          path: .spec.template.spec.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution
+      - notExists:
+          path: .spec.template.spec.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution
+
+  - it: should not inject anti-affinity when user provides node affinity
+    set:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/os
+                    operator: In
+                    values:
+                      - linux
+    asserts:
+      - notFailedTemplate: {}
+      - exists:
+          path: .spec.template.spec.affinity.nodeAffinity
+      - notExists:
+          path: .spec.template.spec.affinity.podAntiAffinity

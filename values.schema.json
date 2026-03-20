@@ -2,9 +2,10 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "properties": {
     "affinity": {
-      "description": "Affinity rules for pod scheduling",
+      "description": "Affinity rules for pod scheduling. When unset and replicaCount \u003e 1, a soft pod anti-affinity on kubernetes.io/hostname is automatically applied. Set to a non-empty affinity object to override.",
       "required": [],
-      "title": "affinity"
+      "title": "affinity",
+      "type": "object"
     },
     "extraArgs": {
       "description": "Extra command-line arguments for Typesense server (e.g., [\"--filter-by-max-ops=200\"])",
@@ -307,17 +308,28 @@
     "pdb": {
       "properties": {
         "enabled": {
-          "default": false,
-          "description": "Enable PodDisruptionBudget for Typesense StatefulSet",
+          "default": true,
+          "description": "Enable PodDisruptionBudget for Typesense StatefulSet. Automatically skipped when replicaCount is 1.",
           "title": "enabled",
           "type": "boolean"
         },
         "maxUnavailable": {
-          "default": 1,
-          "description": "Maximum number of pods that can be unavailable during disruption",
-          "minimum": 1,
-          "title": "maxUnavailable",
-          "type": "integer"
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "enum": [
+                "auto"
+              ],
+              "required": []
+            }
+          ],
+          "default": "auto",
+          "description": "Maximum number of pods that can be unavailable during disruption. Set to \"auto\" (default) to auto-calculate as floor(replicaCount/2), preserving Raft quorum. Set to 0 to block all voluntary disruptions. Any positive value is used directly and must not exceed floor(replicaCount/2).",
+          "required": [],
+          "title": "maxUnavailable"
         }
       },
       "required": [],
@@ -821,6 +833,68 @@
         "logging"
       ],
       "title": "typesense",
+      "type": "object"
+    },
+    "updateStrategy": {
+      "description": "StatefulSet update strategy configuration. When type is RollingUpdate, rollingUpdate.maxUnavailable is required. When type is OnDelete, rollingUpdate is optional and ignored.",
+      "if": {
+        "properties": {
+          "type": {
+            "const": "RollingUpdate",
+            "required": []
+          }
+        },
+        "required": []
+      },
+      "properties": {
+        "rollingUpdate": {
+          "description": "Rolling update configuration. Only used when type is RollingUpdate.",
+          "properties": {
+            "maxUnavailable": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "enum": [
+                    "auto"
+                  ],
+                  "required": []
+                }
+              ],
+              "description": "Maximum number of pods unavailable during a rolling update. Set to \"auto\" to auto-calculate as floor(replicaCount/2). Set to 0 to block all voluntary pod replacements. Must not exceed floor(replicaCount/2).",
+              "required": []
+            }
+          },
+          "required": [],
+          "type": "object"
+        },
+        "type": {
+          "description": "StatefulSet update strategy type. Use RollingUpdate for zero-downtime upgrades or OnDelete for manual pod-by-pod control.",
+          "enum": [
+            "RollingUpdate",
+            "OnDelete"
+          ],
+          "required": []
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "then": {
+        "properties": {
+          "rollingUpdate": {
+            "required": [
+              "maxUnavailable"
+            ]
+          }
+        },
+        "required": [
+          "rollingUpdate"
+        ]
+      },
+      "title": "updateStrategy",
       "type": "object"
     }
   },
