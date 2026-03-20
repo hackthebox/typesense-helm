@@ -66,6 +66,11 @@ jobs:
           echo "name=${CHART_NAME}" >> "${GITHUB_OUTPUT}"
           echo "is_rc=$( [[ "${TAG_VERSION}" == *-rc.* ]] && echo true || echo false )" >> "${GITHUB_OUTPUT}"
 
+      - name: Mark pre-release in Chart.yaml for RC builds
+        if: steps.chart.outputs.is_rc == 'true'
+        run: |
+          yq e -i '.annotations."artifacthub.io/prerelease" = "true"' Chart.yaml
+
       - name: Package chart
         env:
           RELEASE_VERSION: ${{ steps.chart.outputs.version }}
