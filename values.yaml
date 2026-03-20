@@ -159,9 +159,9 @@ tolerations: []
 # @schema
 # type: object
 # @schema
-# -- Affinity rules for pod scheduling. When unset and replicaCount > 1, a soft
-# pod anti-affinity on kubernetes.io/hostname is automatically applied. Set to a
-# non-empty affinity object to override.
+# -- Affinity rules for pod scheduling. When unset or empty and replicaCount > 1,
+# a soft pod anti-affinity on kubernetes.io/hostname is automatically applied. Set
+# to a non-empty affinity object to override this default behavior.
 affinity: {}
 # -- Topology spread constraints for pod distribution across nodes/zones
 topologySpreadConstraints: []

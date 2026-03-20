@@ -217,7 +217,7 @@ storage:
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| affinity | object | `{}` | Affinity rules for pod scheduling. When unset and replicaCount > 1, a soft pod anti-affinity on kubernetes.io/hostname is automatically applied. Set to a non-empty affinity object to override. |
+| affinity | object | `{}` | Affinity rules for pod scheduling. When unset or empty and replicaCount > 1, a soft pod anti-affinity on kubernetes.io/hostname is automatically applied. Set to a non-empty affinity object to override this default behavior. |
 | extraArgs | list | `[]` | Extra command-line arguments for Typesense server (e.g., ["--filter-by-max-ops=200"]) |
 | extraEnv | list | `[]` | Extra environment variables for the Typesense container |
 | fullnameOverride | string | `""` | Override the full name of the release (optional) |
