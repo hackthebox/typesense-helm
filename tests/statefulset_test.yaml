@@ -292,13 +292,13 @@ tests:
               path: /health
               port: http
             periodSeconds: 5
-  - it: should not render scheduling fields when empty
+  - it: should render default anti-affinity but not tolerations or topologySpreadConstraints when empty
     asserts:
       - notFailedTemplate: {}
+      - exists:
+          path: .spec.template.spec.affinity
       - notExists:
           path: .spec.template.spec.tolerations
-      - notExists:
-          path: .spec.template.spec.affinity
       - notExists:
           path: .spec.template.spec.topologySpreadConstraints
   - it: should reference the service account
@@ -579,3 +579,61 @@ tests:
           value: OnDelete
       - notExists:
           path: .spec.updateStrategy.rollingUpdate
+
+  - it: should inject default soft anti-affinity for multi-node clusters
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: .spec.template.spec.affinity
+          value:
+            podAntiAffinity:
+              preferredDuringSchedulingIgnoredDuringExecution:
+                - weight: 100
+                  podAffinityTerm:
+                    labelSelector:
+                      matchLabels:
+                        app.kubernetes.io/name: typesense
+                        app.kubernetes.io/instance: foo
+                    topologyKey: kubernetes.io/hostname
+
+  - it: should not inject anti-affinity when replicaCount is 1
+    set:
+      replicaCount: 1
+    asserts:
+      - notFailedTemplate: {}
+      - notExists:
+          path: .spec.template.spec.affinity
+
+  - it: should use user-provided affinity instead of default when set
+    set:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app.kubernetes.io/name: typesense
+              topologyKey: kubernetes.io/hostname
+    asserts:
+      - notFailedTemplate: {}
+      - exists:
+          path: .spec.template.spec.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution
+      - notExists:
+          path: .spec.template.spec.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution
+
+  - it: should not inject anti-affinity when user provides node affinity
+    set:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/os
+                    operator: In
+                    values:
+                      - linux
+    asserts:
+      - notFailedTemplate: {}
+      - exists:
+          path: .spec.template.spec.affinity.nodeAffinity
+      - notExists:
+          path: .spec.template.spec.affinity.podAntiAffinity
