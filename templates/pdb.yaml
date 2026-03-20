@@ -2,7 +2,7 @@
 {{- $replicaCount := int .Values.replicaCount -}}
 {{- $maxFault := div $replicaCount 2 -}}
 {{- $maxUnavailable := int .Values.pdb.maxUnavailable -}}
-{{- if eq $maxUnavailable 0 }}
+{{- if lt $maxUnavailable 0 }}
   {{- $maxUnavailable = $maxFault -}}
 {{- end }}
 {{- if gt $maxUnavailable $maxFault }}

@@ -14,12 +14,15 @@ spec:
   podManagementPolicy: Parallel
   replicas: {{ .Values.replicaCount }}
   updateStrategy:
+    {{- if not (or (eq .Values.updateStrategy.type "RollingUpdate") (eq .Values.updateStrategy.type "OnDelete")) }}
+    {{- fail (printf "updateStrategy.type must be RollingUpdate or OnDelete, got %q" .Values.updateStrategy.type) }}
+    {{- end }}
     type: {{ .Values.updateStrategy.type }}
     {{- if eq .Values.updateStrategy.type "RollingUpdate" }}
     {{- $replicaCount := int .Values.replicaCount }}
     {{- $maxFault := div $replicaCount 2 }}
     {{- $maxUnavailable := int .Values.updateStrategy.rollingUpdate.maxUnavailable }}
-    {{- if eq $maxUnavailable 0 }}
+    {{- if lt $maxUnavailable 0 }}
       {{- if gt $replicaCount 1 }}
         {{- $maxUnavailable = $maxFault }}
       {{- else }}

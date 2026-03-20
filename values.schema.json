@@ -314,9 +314,9 @@
           "type": "boolean"
         },
         "maxUnavailable": {
-          "default": 0,
-          "description": "Maximum number of pods that can be unavailable during disruption. Set to 0 (default) to auto-calculate as floor(replicaCount/2), preserving Raft quorum. Can be overridden to a positive value for more conservative disruption handling. Must not exceed floor(replicaCount/2).",
-          "minimum": 0,
+          "default": -1,
+          "description": "Maximum number of pods that can be unavailable during disruption. Set to -1 (default) to auto-calculate as floor(replicaCount/2), preserving Raft quorum. Set to 0 to block all voluntary disruptions. Any positive value is used directly and must not exceed floor(replicaCount/2).",
+          "minimum": -1,
           "title": "maxUnavailable",
           "type": "integer"
         }
@@ -829,9 +829,9 @@
         "rollingUpdate": {
           "properties": {
             "maxUnavailable": {
-              "default": 0,
-              "description": "Maximum number of pods that can be unavailable during a rolling update. Set to 0 (default) to auto-calculate as floor(replicaCount/2), preserving Raft quorum. Can be overridden to a positive value for more conservative rolling updates. Must not exceed floor(replicaCount/2). Ignored when updateStrategy.type is OnDelete.",
-              "minimum": 0,
+              "default": -1,
+              "description": "Maximum number of pods that can be unavailable during a rolling update. Set to -1 (default) to auto-calculate as floor(replicaCount/2), preserving Raft quorum. Set to 0 to block all voluntary pod replacements. Any positive value is used directly and must not exceed floor(replicaCount/2). Ignored when updateStrategy.type is OnDelete.",
+              "minimum": -1,
               "title": "maxUnavailable",
               "type": "integer"
             }

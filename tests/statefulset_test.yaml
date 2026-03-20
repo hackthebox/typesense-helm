@@ -580,6 +580,14 @@ tests:
       - notExists:
           path: .spec.updateStrategy.rollingUpdate
 
+  - it: should reject invalid updateStrategy type
+    set:
+      updateStrategy:
+        type: Invalid
+    asserts:
+      - failedTemplate:
+          errorMessage: "updateStrategy.type must be RollingUpdate or OnDelete, got \"Invalid\""
+
   - it: should inject default soft anti-affinity for multi-node clusters
     asserts:
       - notFailedTemplate: {}
