@@ -2,14 +2,10 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "properties": {
     "affinity": {
-      "default": "",
       "description": "Affinity rules for pod scheduling. When unset and replicaCount \u003e 1, a soft pod anti-affinity on kubernetes.io/hostname is automatically applied. Set to a non-empty affinity object to override.",
       "required": [],
       "title": "affinity",
-      "type": [
-        "object",
-        "null"
-      ]
+      "type": "object"
     },
     "extraArgs": {
       "description": "Extra command-line arguments for Typesense server (e.g., [\"--filter-by-max-ops=200\"])",
