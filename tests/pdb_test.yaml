@@ -7,15 +7,7 @@ release:
 templates:
   - pdb.yaml
 tests:
-  - it: should not create PDB by default
-    asserts:
-      - notFailedTemplate: {}
-      - hasDocuments:
-          count: 0
-  - it: should create PDB when enabled
-    set:
-      pdb:
-        enabled: true
+  - it: should create PDB by default with auto-calculated maxUnavailable
     asserts:
       - notFailedTemplate: {}
       - hasDocuments:
@@ -28,16 +20,84 @@ tests:
       - equal:
           path: .spec.maxUnavailable
           value: 1
-  - it: should allow overriding maxUnavailable
+
+  - it: should not create PDB when replicaCount is 1
     set:
+      replicaCount: 1
+    asserts:
+      - notFailedTemplate: {}
+      - hasDocuments:
+          count: 0
+
+  - it: should not create PDB when replicaCount is 1 even if pdb.enabled is true
+    set:
+      replicaCount: 1
       pdb:
         enabled: true
-        maxUnavailable: 2
+    asserts:
+      - notFailedTemplate: {}
+      - hasDocuments:
+          count: 0
+
+  - it: should not create PDB when disabled
+    set:
+      pdb:
+        enabled: false
+    asserts:
+      - notFailedTemplate: {}
+      - hasDocuments:
+          count: 0
+
+  - it: should auto-calculate maxUnavailable as floor(replicaCount/2) for 5 replicas
+    set:
+      replicaCount: 5
     asserts:
       - notFailedTemplate: {}
       - equal:
           path: .spec.maxUnavailable
           value: 2
+
+  - it: should auto-calculate maxUnavailable as floor(replicaCount/2) for 7 replicas
+    set:
+      replicaCount: 7
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: .spec.maxUnavailable
+          value: 3
+
+  - it: should allow overriding maxUnavailable within quorum bounds
+    set:
+      replicaCount: 5
+      pdb:
+        enabled: true
+        maxUnavailable: 1
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: .spec.maxUnavailable
+          value: 1
+
+  - it: should reject maxUnavailable exceeding Raft fault tolerance
+    set:
+      replicaCount: 3
+      pdb:
+        enabled: true
+        maxUnavailable: 2
+    asserts:
+      - failedTemplate:
+          errorMessage: "pdb.maxUnavailable (2) exceeds Raft fault tolerance for replicaCount 3 (max: floor(3/2) = 1)"
+
+  - it: should reject maxUnavailable exceeding Raft fault tolerance for 5 replicas
+    set:
+      replicaCount: 5
+      pdb:
+        enabled: true
+        maxUnavailable: 3
+    asserts:
+      - failedTemplate:
+          errorMessage: "pdb.maxUnavailable (3) exceeds Raft fault tolerance for replicaCount 5 (max: floor(5/2) = 2)"
+
   - it: should use selector labels matching the StatefulSet
     set:
       pdb:

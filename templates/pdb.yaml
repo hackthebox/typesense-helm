@@ -1,4 +1,12 @@
-{{- if .Values.pdb.enabled -}}
+{{- if and .Values.pdb.enabled (gt (int .Values.replicaCount) 1) -}}
+{{- $replicaCount := int .Values.replicaCount -}}
+{{- $maxFault := div $replicaCount 2 -}}
+{{- $maxUnavailable := default $maxFault .Values.pdb.maxUnavailable -}}
+{{- if .Values.pdb.maxUnavailable }}
+{{- if gt (int .Values.pdb.maxUnavailable) $maxFault }}
+{{- fail (printf "pdb.maxUnavailable (%d) exceeds Raft fault tolerance for replicaCount %d (max: floor(%d/2) = %d)" (int .Values.pdb.maxUnavailable) $replicaCount $replicaCount $maxFault) }}
+{{- end }}
+{{- end }}
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
@@ -7,7 +15,7 @@ metadata:
   labels:
     {{- include "typesense.labels" . | nindent 4 }}
 spec:
-  maxUnavailable: {{ .Values.pdb.maxUnavailable }}
+  maxUnavailable: {{ $maxUnavailable }}
   selector:
     matchLabels:
       {{- include "typesense.selectorLabels" . | nindent 6 }}
