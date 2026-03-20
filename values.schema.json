@@ -314,15 +314,11 @@
           "type": "boolean"
         },
         "maxUnavailable": {
-          "default": "",
-          "description": "Maximum number of pods that can be unavailable during disruption. Auto-calculated as floor(replicaCount/2) when unset, preserving Raft quorum. Can be overridden to a lower value for more conservative disruption handling. Must not exceed floor(replicaCount/2).",
-          "minimum": 1,
-          "required": [],
+          "default": 0,
+          "description": "Maximum number of pods that can be unavailable during disruption. Set to 0 (default) to auto-calculate as floor(replicaCount/2), preserving Raft quorum. Can be overridden to a positive value for more conservative disruption handling. Must not exceed floor(replicaCount/2).",
+          "minimum": 0,
           "title": "maxUnavailable",
-          "type": [
-            "integer",
-            "null"
-          ]
+          "type": "integer"
         }
       },
       "required": [],
@@ -833,15 +829,11 @@
         "rollingUpdate": {
           "properties": {
             "maxUnavailable": {
-              "default": "",
-              "description": "Maximum number of pods that can be unavailable during a rolling update. Auto-calculated as floor(replicaCount/2) when unset, preserving Raft quorum. Can be overridden to a lower value for more conservative rolling updates. Must not exceed floor(replicaCount/2). Ignored when updateStrategy.type is OnDelete.",
-              "minimum": 1,
-              "required": [],
+              "default": 0,
+              "description": "Maximum number of pods that can be unavailable during a rolling update. Set to 0 (default) to auto-calculate as floor(replicaCount/2), preserving Raft quorum. Can be overridden to a positive value for more conservative rolling updates. Must not exceed floor(replicaCount/2). Ignored when updateStrategy.type is OnDelete.",
+              "minimum": 0,
               "title": "maxUnavailable",
-              "type": [
-                "integer",
-                "null"
-              ]
+              "type": "integer"
             }
           },
           "required": [],

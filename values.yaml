@@ -173,14 +173,14 @@ pdb:
   # -- Enable PodDisruptionBudget for Typesense StatefulSet. Automatically skipped when replicaCount is 1.
   enabled: true
   # @schema
-  # type: [integer, null]
-  # minimum: 1
+  # type: integer
+  # minimum: 0
   # @schema
   # -- Maximum number of pods that can be unavailable during disruption.
-  # Auto-calculated as floor(replicaCount/2) when unset, preserving Raft quorum.
-  # Can be overridden to a lower value for more conservative disruption handling.
+  # Set to 0 (default) to auto-calculate as floor(replicaCount/2), preserving Raft quorum.
+  # Can be overridden to a positive value for more conservative disruption handling.
   # Must not exceed floor(replicaCount/2).
-  maxUnavailable:
+  maxUnavailable: 0
 
 updateStrategy:
   # -- StatefulSet update strategy type. Use RollingUpdate (default) for zero-downtime
@@ -188,14 +188,14 @@ updateStrategy:
   type: RollingUpdate
   rollingUpdate:
     # @schema
-    # type: [integer, null]
-    # minimum: 1
+    # type: integer
+    # minimum: 0
     # @schema
     # -- Maximum number of pods that can be unavailable during a rolling update.
-    # Auto-calculated as floor(replicaCount/2) when unset, preserving Raft quorum.
-    # Can be overridden to a lower value for more conservative rolling updates.
+    # Set to 0 (default) to auto-calculate as floor(replicaCount/2), preserving Raft quorum.
+    # Can be overridden to a positive value for more conservative rolling updates.
     # Must not exceed floor(replicaCount/2). Ignored when updateStrategy.type is OnDelete.
-    maxUnavailable:
+    maxUnavailable: 0
 
 storage:
   # -- Storage class to use for Persistent Volume Claims (PVC)

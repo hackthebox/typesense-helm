@@ -18,14 +18,16 @@ spec:
     {{- if eq .Values.updateStrategy.type "RollingUpdate" }}
     {{- $replicaCount := int .Values.replicaCount }}
     {{- $maxFault := div $replicaCount 2 }}
-    {{- $maxUnavailable := 1 }}
-    {{- if gt $replicaCount 1 }}
-      {{- $maxUnavailable = default $maxFault .Values.updateStrategy.rollingUpdate.maxUnavailable }}
-      {{- if .Values.updateStrategy.rollingUpdate.maxUnavailable }}
-        {{- if gt (int .Values.updateStrategy.rollingUpdate.maxUnavailable) $maxFault }}
-          {{- fail (printf "updateStrategy.rollingUpdate.maxUnavailable (%d) exceeds Raft fault tolerance for replicaCount %d (max: floor(%d/2) = %d)" (int .Values.updateStrategy.rollingUpdate.maxUnavailable) $replicaCount $replicaCount $maxFault) }}
-        {{- end }}
+    {{- $maxUnavailable := int .Values.updateStrategy.rollingUpdate.maxUnavailable }}
+    {{- if eq $maxUnavailable 0 }}
+      {{- if gt $replicaCount 1 }}
+        {{- $maxUnavailable = $maxFault }}
+      {{- else }}
+        {{- $maxUnavailable = 1 }}
       {{- end }}
+    {{- end }}
+    {{- if and (gt $replicaCount 1) (gt $maxUnavailable $maxFault) }}
+      {{- fail (printf "updateStrategy.rollingUpdate.maxUnavailable (%d) exceeds Raft fault tolerance for replicaCount %d (max: floor(%d/2) = %d)" $maxUnavailable $replicaCount $replicaCount $maxFault) }}
     {{- end }}
     rollingUpdate:
       maxUnavailable: {{ $maxUnavailable }}
