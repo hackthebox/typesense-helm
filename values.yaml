@@ -157,7 +157,7 @@ nodeSelector: {}
 # -- Tolerations for pod scheduling
 tolerations: []
 # @schema
-# type: [object, "null"]
+# type: [object, null]
 # @schema
 # -- Affinity rules for pod scheduling. When unset and replicaCount > 1, a soft
 # pod anti-affinity on kubernetes.io/hostname is automatically applied. Set to a
@@ -173,7 +173,7 @@ pdb:
   # -- Enable PodDisruptionBudget for Typesense StatefulSet. Automatically skipped when replicaCount is 1.
   enabled: true
   # @schema
-  # type: [integer, "null"]
+  # type: [integer, null]
   # minimum: 1
   # @schema
   # -- Maximum number of pods that can be unavailable during disruption.
@@ -188,7 +188,7 @@ updateStrategy:
   type: RollingUpdate
   rollingUpdate:
     # @schema
-    # type: [integer, "null"]
+    # type: [integer, null]
     # minimum: 1
     # @schema
     # -- Maximum number of pods that can be unavailable during a rolling update.
