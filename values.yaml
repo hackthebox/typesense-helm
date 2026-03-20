@@ -156,8 +156,10 @@ readinessProbe:
 nodeSelector: {}
 # -- Tolerations for pod scheduling
 tolerations: []
-# -- Affinity rules for pod scheduling
-affinity: {}
+# -- Affinity rules for pod scheduling. When unset and replicaCount > 1, a soft
+# pod anti-affinity on kubernetes.io/hostname is automatically applied. Set to
+# any non-empty value to override.
+affinity:
 # -- Topology spread constraints for pod distribution across nodes/zones
 topologySpreadConstraints: []
 
@@ -165,14 +167,32 @@ pdb:
   # @schema
   # type: boolean
   # @schema
-  # -- Enable PodDisruptionBudget for Typesense StatefulSet
-  enabled: false
+  # -- Enable PodDisruptionBudget for Typesense StatefulSet. Automatically skipped when replicaCount is 1.
+  enabled: true
   # @schema
-  # type: integer
+  # type: [integer, "null"]
   # minimum: 1
   # @schema
-  # -- Maximum number of pods that can be unavailable during disruption
-  maxUnavailable: 1
+  # -- Maximum number of pods that can be unavailable during disruption.
+  # Auto-calculated as floor(replicaCount/2) when unset, preserving Raft quorum.
+  # Can be overridden to a lower value for more conservative disruption handling.
+  # Must not exceed floor(replicaCount/2).
+  maxUnavailable:
+
+updateStrategy:
+  # -- StatefulSet update strategy type. Use RollingUpdate (default) for zero-downtime
+  # upgrades or OnDelete for manual pod-by-pod control.
+  type: RollingUpdate
+  rollingUpdate:
+    # @schema
+    # type: [integer, "null"]
+    # minimum: 1
+    # @schema
+    # -- Maximum number of pods that can be unavailable during a rolling update.
+    # Auto-calculated as floor(replicaCount/2) when unset, preserving Raft quorum.
+    # Can be overridden to a lower value for more conservative rolling updates.
+    # Must not exceed floor(replicaCount/2). Ignored when updateStrategy.type is OnDelete.
+    maxUnavailable:
 
 storage:
   # -- Storage class to use for Persistent Volume Claims (PVC)

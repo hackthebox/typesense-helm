@@ -307,17 +307,16 @@
     "pdb": {
       "properties": {
         "enabled": {
-          "default": false,
-          "description": "Enable PodDisruptionBudget for Typesense StatefulSet",
+          "default": true,
+          "description": "Enable PodDisruptionBudget for Typesense StatefulSet. Automatically skipped when replicaCount is 1.",
           "title": "enabled",
           "type": "boolean"
         },
         "maxUnavailable": {
-          "default": 1,
           "description": "Maximum number of pods that can be unavailable during disruption",
           "minimum": 1,
           "title": "maxUnavailable",
-          "type": "integer"
+          "type": ["integer", "null"]
         }
       },
       "required": [],
