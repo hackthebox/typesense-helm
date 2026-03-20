@@ -64,6 +64,29 @@ tests:
           path: .spec.maxUnavailable
           value: 3
 
+  - it: should auto-calculate when maxUnavailable is -1
+    set:
+      replicaCount: 5
+      pdb:
+        enabled: true
+        maxUnavailable: -1
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: .spec.maxUnavailable
+          value: 2
+
+  - it: should allow maxUnavailable 0 to block all voluntary disruptions
+    set:
+      pdb:
+        enabled: true
+        maxUnavailable: 0
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: .spec.maxUnavailable
+          value: 0
+
   - it: should allow overriding maxUnavailable within quorum bounds
     set:
       replicaCount: 5

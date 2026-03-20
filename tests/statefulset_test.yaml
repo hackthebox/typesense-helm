@@ -544,6 +544,31 @@ tests:
           path: .spec.updateStrategy.rollingUpdate.maxUnavailable
           value: 1
 
+  - it: should auto-calculate updateStrategy maxUnavailable when set to -1
+    set:
+      replicaCount: 5
+      updateStrategy:
+        type: RollingUpdate
+        rollingUpdate:
+          maxUnavailable: -1
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: .spec.updateStrategy.rollingUpdate.maxUnavailable
+          value: 2
+
+  - it: should allow updateStrategy maxUnavailable 0 to block all voluntary replacements
+    set:
+      updateStrategy:
+        type: RollingUpdate
+        rollingUpdate:
+          maxUnavailable: 0
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: .spec.updateStrategy.rollingUpdate.maxUnavailable
+          value: 0
+
   - it: should allow overriding updateStrategy maxUnavailable within quorum bounds
     set:
       replicaCount: 5
