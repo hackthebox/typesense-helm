@@ -544,13 +544,13 @@ tests:
           path: .spec.updateStrategy.rollingUpdate.maxUnavailable
           value: 1
 
-  - it: should auto-calculate updateStrategy maxUnavailable when set to -1
+  - it: should auto-calculate updateStrategy maxUnavailable when set to auto
     set:
       replicaCount: 5
       updateStrategy:
         type: RollingUpdate
         rollingUpdate:
-          maxUnavailable: -1
+          maxUnavailable: auto
     asserts:
       - notFailedTemplate: {}
       - equal:

@@ -15,8 +15,8 @@
 ### Changed
 
 - `pdb.enabled` default changed from `false` to `true`
-- `pdb.maxUnavailable` default changed from `1` to `-1` (auto-calculate as `floor(replicaCount/2)`)
-- `updateStrategy.rollingUpdate.maxUnavailable` added with default `-1` (auto-calculate)
+- `pdb.maxUnavailable` default changed from `1` to `"auto"` (auto-calculate as `floor(replicaCount/2)`)
+- `updateStrategy.rollingUpdate.maxUnavailable` added with default `"auto"` (auto-calculate)
 - Built-in soft pod anti-affinity is now injected when `affinity` is empty (`{}`)
 
 ## 1.0.0 ![AppVersion: 30.1](https://img.shields.io/static/v1?label=AppVersion&message=30.1&color=success&logo=) ![Helm: v3](https://img.shields.io/static/v1?label=Helm&message=v3&color=informational&logo=helm)

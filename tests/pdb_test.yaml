@@ -64,12 +64,12 @@ tests:
           path: .spec.maxUnavailable
           value: 3
 
-  - it: should auto-calculate when maxUnavailable is -1
+  - it: should auto-calculate when maxUnavailable is auto
     set:
       replicaCount: 5
       pdb:
         enabled: true
-        maxUnavailable: -1
+        maxUnavailable: auto
     asserts:
       - notFailedTemplate: {}
       - equal:
