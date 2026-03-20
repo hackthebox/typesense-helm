@@ -182,15 +182,46 @@ pdb:
   # and must not exceed floor(replicaCount/2).
   maxUnavailable: -1
 
+# @schema
+# type: object
+# required:
+#   - type
+# properties:
+#   type:
+#     description: "StatefulSet update strategy type. Use RollingUpdate for zero-downtime upgrades or OnDelete for manual pod-by-pod control."
+#     enum:
+#       - RollingUpdate
+#       - OnDelete
+#   rollingUpdate:
+#     type: object
+#     description: "Rolling update configuration. Only used when type is RollingUpdate."
+#     properties:
+#       maxUnavailable:
+#         description: "Maximum number of pods unavailable during a rolling update. Set to -1 to auto-calculate as floor(replicaCount/2). Set to 0 to block all voluntary pod replacements. Must not exceed floor(replicaCount/2)."
+#         anyOf:
+#           - type: integer
+#             minimum: -1
+#           - type: "null"
+# if:
+#   properties:
+#     type:
+#       const: RollingUpdate
+# then:
+#   required:
+#     - rollingUpdate
+#   properties:
+#     rollingUpdate:
+#       required:
+#         - maxUnavailable
+# @schema
+# -- StatefulSet update strategy configuration.
+# When type is RollingUpdate, rollingUpdate.maxUnavailable is required.
+# When type is OnDelete, rollingUpdate is optional and ignored.
 updateStrategy:
   # -- StatefulSet update strategy type. Use RollingUpdate (default) for zero-downtime
   # upgrades or OnDelete for manual pod-by-pod control.
   type: RollingUpdate
   rollingUpdate:
-    # @schema
-    # type: integer
-    # minimum: -1
-    # @schema
     # -- Maximum number of pods that can be unavailable during a rolling update.
     # Set to -1 (default) to auto-calculate as floor(replicaCount/2), preserving Raft quorum.
     # Set to 0 to block all voluntary pod replacements. Any positive value is used directly

@@ -295,6 +295,7 @@ storage:
 | typesense.logging.slowRequestsTimeMs | string | `nil` | Threshold in ms for slow request logging (-1 disables). Unset uses Typesense default (-1) |
 | typesense.snapshots.intervalSeconds | string | `nil` | Replication log snapshot frequency in seconds. Unset uses Typesense default (3600) |
 | typesense.threadPoolSize | string | `nil` | Concurrent request handler threads. Unset uses Typesense default (NUM_CORES * 8) |
+| updateStrategy | object | `{"rollingUpdate":{"maxUnavailable":-1},"type":"RollingUpdate"}` | StatefulSet update strategy configuration. When type is RollingUpdate, rollingUpdate.maxUnavailable is required. When type is OnDelete, rollingUpdate is optional and ignored. |
 | updateStrategy.rollingUpdate.maxUnavailable | int | `-1` | Maximum number of pods that can be unavailable during a rolling update. Set to -1 (default) to auto-calculate as floor(replicaCount/2), preserving Raft quorum. Set to 0 to block all voluntary pod replacements. Any positive value is used directly and must not exceed floor(replicaCount/2). Ignored when updateStrategy.type is OnDelete. |
 | updateStrategy.type | string | `"RollingUpdate"` | StatefulSet update strategy type. Use RollingUpdate (default) for zero-downtime upgrades or OnDelete for manual pod-by-pod control. |
 

@@ -825,31 +825,61 @@
       "type": "object"
     },
     "updateStrategy": {
+      "description": "StatefulSet update strategy configuration. When type is RollingUpdate, rollingUpdate.maxUnavailable is required. When type is OnDelete, rollingUpdate is optional and ignored.",
+      "if": {
+        "properties": {
+          "type": {
+            "const": "RollingUpdate",
+            "required": []
+          }
+        },
+        "required": []
+      },
       "properties": {
         "rollingUpdate": {
+          "description": "Rolling update configuration. Only used when type is RollingUpdate.",
           "properties": {
             "maxUnavailable": {
-              "default": -1,
-              "description": "Maximum number of pods that can be unavailable during a rolling update. Set to -1 (default) to auto-calculate as floor(replicaCount/2), preserving Raft quorum. Set to 0 to block all voluntary pod replacements. Any positive value is used directly and must not exceed floor(replicaCount/2). Ignored when updateStrategy.type is OnDelete.",
-              "minimum": -1,
-              "title": "maxUnavailable",
-              "type": "integer"
+              "anyOf": [
+                {
+                  "minimum": -1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Maximum number of pods unavailable during a rolling update. Set to -1 to auto-calculate as floor(replicaCount/2). Set to 0 to block all voluntary pod replacements. Must not exceed floor(replicaCount/2).",
+              "required": []
             }
           },
           "required": [],
-          "title": "rollingUpdate",
           "type": "object"
         },
         "type": {
-          "default": "RollingUpdate",
-          "description": "StatefulSet update strategy type. Use RollingUpdate (default) for zero-downtime upgrades or OnDelete for manual pod-by-pod control.",
-          "required": [],
-          "title": "type"
+          "description": "StatefulSet update strategy type. Use RollingUpdate for zero-downtime upgrades or OnDelete for manual pod-by-pod control.",
+          "enum": [
+            "RollingUpdate",
+            "OnDelete"
+          ],
+          "required": []
         }
       },
       "required": [
-        "rollingUpdate"
+        "type"
       ],
+      "then": {
+        "properties": {
+          "rollingUpdate": {
+            "required": [
+              "maxUnavailable"
+            ]
+          }
+        },
+        "required": [
+          "rollingUpdate"
+        ]
+      },
       "title": "updateStrategy",
       "type": "object"
     }
@@ -865,7 +895,6 @@
     "startupProbe",
     "readinessProbe",
     "pdb",
-    "updateStrategy",
     "storage",
     "secrets",
     "typesense",
