@@ -178,7 +178,7 @@ pdb:
   #     minimum: 0
   #   - enum: [auto]
   # @schema
-  # -- Maximum number of pods that can be unavailable during disruption.
+  # -- (string/int) Maximum number of pods that can be unavailable during disruption.
   # Set to "auto" (default) to auto-calculate as floor(replicaCount/2), preserving Raft quorum.
   # Set to 0 to block all voluntary disruptions. Any positive value is used directly
   # and must not exceed floor(replicaCount/2).
@@ -224,7 +224,7 @@ updateStrategy:
   # upgrades or OnDelete for manual pod-by-pod control.
   type: RollingUpdate
   rollingUpdate:
-    # -- Maximum number of pods that can be unavailable during a rolling update.
+    # -- (string/int) Maximum number of pods that can be unavailable during a rolling update.
     # Set to "auto" (default) to auto-calculate as floor(replicaCount/2), preserving Raft quorum.
     # Set to 0 to block all voluntary pod replacements. Any positive value is used directly
     # and must not exceed floor(replicaCount/2). Ignored when updateStrategy.type is OnDelete.
