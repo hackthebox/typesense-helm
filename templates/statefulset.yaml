@@ -13,6 +13,23 @@ spec:
   serviceName: {{ include "typesense.fullname" . }}-headless-svc
   podManagementPolicy: Parallel
   replicas: {{ .Values.replicaCount }}
+  updateStrategy:
+    type: {{ .Values.updateStrategy.type }}
+    {{- if eq .Values.updateStrategy.type "RollingUpdate" }}
+    {{- $replicaCount := int .Values.replicaCount }}
+    {{- $maxFault := div $replicaCount 2 }}
+    {{- $maxUnavailable := 1 }}
+    {{- if gt $replicaCount 1 }}
+      {{- $maxUnavailable = default $maxFault .Values.updateStrategy.rollingUpdate.maxUnavailable }}
+      {{- if .Values.updateStrategy.rollingUpdate.maxUnavailable }}
+        {{- if gt (int .Values.updateStrategy.rollingUpdate.maxUnavailable) $maxFault }}
+          {{- fail (printf "updateStrategy.rollingUpdate.maxUnavailable (%d) exceeds Raft fault tolerance for replicaCount %d (max: floor(%d/2) = %d)" (int .Values.updateStrategy.rollingUpdate.maxUnavailable) $replicaCount $replicaCount $maxFault) }}
+        {{- end }}
+      {{- end }}
+    {{- end }}
+    rollingUpdate:
+      maxUnavailable: {{ $maxUnavailable }}
+    {{- end }}
   selector:
     matchLabels:
       {{- include "typesense.selectorLabels" . | nindent 6 }}

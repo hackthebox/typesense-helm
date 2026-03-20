@@ -512,3 +512,70 @@ tests:
       - equal:
           path: .spec.template.spec.containers[1].envFrom[0].secretRef.name
           value: foo-typesense-secret
+
+  - it: should render RollingUpdate strategy with auto-calculated maxUnavailable by default
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: .spec.updateStrategy.type
+          value: RollingUpdate
+      - equal:
+          path: .spec.updateStrategy.rollingUpdate.maxUnavailable
+          value: 1
+
+  - it: should auto-calculate updateStrategy maxUnavailable for 5 replicas
+    set:
+      replicaCount: 5
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: .spec.updateStrategy.rollingUpdate.maxUnavailable
+          value: 2
+
+  - it: should render maxUnavailable 1 for replicaCount 1
+    set:
+      replicaCount: 1
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: .spec.updateStrategy.type
+          value: RollingUpdate
+      - equal:
+          path: .spec.updateStrategy.rollingUpdate.maxUnavailable
+          value: 1
+
+  - it: should allow overriding updateStrategy maxUnavailable within quorum bounds
+    set:
+      replicaCount: 5
+      updateStrategy:
+        type: RollingUpdate
+        rollingUpdate:
+          maxUnavailable: 1
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: .spec.updateStrategy.rollingUpdate.maxUnavailable
+          value: 1
+
+  - it: should reject updateStrategy maxUnavailable exceeding Raft fault tolerance
+    set:
+      replicaCount: 3
+      updateStrategy:
+        type: RollingUpdate
+        rollingUpdate:
+          maxUnavailable: 2
+    asserts:
+      - failedTemplate:
+          errorMessage: "updateStrategy.rollingUpdate.maxUnavailable (2) exceeds Raft fault tolerance for replicaCount 3 (max: floor(3/2) = 1)"
+
+  - it: should render OnDelete strategy without rollingUpdate block
+    set:
+      updateStrategy:
+        type: OnDelete
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: .spec.updateStrategy.type
+          value: OnDelete
+      - notExists:
+          path: .spec.updateStrategy.rollingUpdate
