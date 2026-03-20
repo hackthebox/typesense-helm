@@ -156,9 +156,12 @@ readinessProbe:
 nodeSelector: {}
 # -- Tolerations for pod scheduling
 tolerations: []
+# @schema
+# type: [object, "null"]
+# @schema
 # -- Affinity rules for pod scheduling. When unset and replicaCount > 1, a soft
-# pod anti-affinity on kubernetes.io/hostname is automatically applied. Set to
-# any non-empty value to override.
+# pod anti-affinity on kubernetes.io/hostname is automatically applied. Set to a
+# non-empty affinity object to override.
 affinity:
 # -- Topology spread constraints for pod distribution across nodes/zones
 topologySpreadConstraints: []
