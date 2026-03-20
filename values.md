@@ -217,7 +217,7 @@ storage:
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| affinity | object | `{}` | Affinity rules for pod scheduling |
+| affinity | string | `nil` | Affinity rules for pod scheduling. When unset and replicaCount > 1, a soft pod anti-affinity on kubernetes.io/hostname is automatically applied. Set to any non-empty value to override. |
 | extraArgs | list | `[]` | Extra command-line arguments for Typesense server (e.g., ["--filter-by-max-ops=200"]) |
 | extraEnv | list | `[]` | Extra environment variables for the Typesense container |
 | fullnameOverride | string | `""` | Override the full name of the release (optional) |
@@ -247,8 +247,8 @@ storage:
 | metrics.serviceMonitor.labels | object | `{}` | Additional labels for ServiceMonitor |
 | nameOverride | string | `""` | Override the name of the release (optional) |
 | nodeSelector | object | `{}` | Node selector to schedule pods on specific nodes (optional) |
-| pdb.enabled | bool | `false` | Enable PodDisruptionBudget for Typesense StatefulSet |
-| pdb.maxUnavailable | int | `1` | Maximum number of pods that can be unavailable during disruption |
+| pdb.enabled | bool | `true` | Enable PodDisruptionBudget for Typesense StatefulSet. Automatically skipped when replicaCount is 1. |
+| pdb.maxUnavailable | string | `nil` | Maximum number of pods that can be unavailable during disruption. Auto-calculated as floor(replicaCount/2) when unset, preserving Raft quorum. Can be overridden to a lower value for more conservative disruption handling. Must not exceed floor(replicaCount/2). |
 | podAnnotations | object | `{}` | Additional annotations to add to the Typesense pod(s) |
 | podLabels | object | `{}` | Additional labels to add to the Typesense pod(s) |
 | podSecurityContext.fsGroup | int | `2000` | Group ID for the filesystem of the Typesense container |
@@ -295,6 +295,8 @@ storage:
 | typesense.logging.slowRequestsTimeMs | string | `nil` | Threshold in ms for slow request logging (-1 disables). Unset uses Typesense default (-1) |
 | typesense.snapshots.intervalSeconds | string | `nil` | Replication log snapshot frequency in seconds. Unset uses Typesense default (3600) |
 | typesense.threadPoolSize | string | `nil` | Concurrent request handler threads. Unset uses Typesense default (NUM_CORES * 8) |
+| updateStrategy.rollingUpdate.maxUnavailable | string | `nil` | Maximum number of pods that can be unavailable during a rolling update. Auto-calculated as floor(replicaCount/2) when unset, preserving Raft quorum. Can be overridden to a lower value for more conservative rolling updates. Must not exceed floor(replicaCount/2). Ignored when updateStrategy.type is OnDelete. |
+| updateStrategy.type | string | `"RollingUpdate"` | StatefulSet update strategy type. Use RollingUpdate (default) for zero-downtime upgrades or OnDelete for manual pod-by-pod control. |
 
 ## Upgrading
 

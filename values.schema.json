@@ -2,7 +2,8 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "properties": {
     "affinity": {
-      "description": "Affinity rules for pod scheduling",
+      "default": "",
+      "description": "Affinity rules for pod scheduling. When unset and replicaCount \u003e 1, a soft pod anti-affinity on kubernetes.io/hostname is automatically applied. Set to any non-empty value to override.",
       "required": [],
       "title": "affinity"
     },
@@ -313,10 +314,15 @@
           "type": "boolean"
         },
         "maxUnavailable": {
-          "description": "Maximum number of pods that can be unavailable during disruption",
+          "default": "",
+          "description": "Maximum number of pods that can be unavailable during disruption. Auto-calculated as floor(replicaCount/2) when unset, preserving Raft quorum. Can be overridden to a lower value for more conservative disruption handling. Must not exceed floor(replicaCount/2).",
           "minimum": 1,
+          "required": [],
           "title": "maxUnavailable",
-          "type": ["integer", "null"]
+          "type": [
+            "integer",
+            "null"
+          ]
         }
       },
       "required": [],
@@ -821,6 +827,39 @@
       ],
       "title": "typesense",
       "type": "object"
+    },
+    "updateStrategy": {
+      "properties": {
+        "rollingUpdate": {
+          "properties": {
+            "maxUnavailable": {
+              "default": "",
+              "description": "Maximum number of pods that can be unavailable during a rolling update. Auto-calculated as floor(replicaCount/2) when unset, preserving Raft quorum. Can be overridden to a lower value for more conservative rolling updates. Must not exceed floor(replicaCount/2). Ignored when updateStrategy.type is OnDelete.",
+              "minimum": 1,
+              "required": [],
+              "title": "maxUnavailable",
+              "type": [
+                "integer",
+                "null"
+              ]
+            }
+          },
+          "required": [],
+          "title": "rollingUpdate",
+          "type": "object"
+        },
+        "type": {
+          "default": "RollingUpdate",
+          "description": "StatefulSet update strategy type. Use RollingUpdate (default) for zero-downtime upgrades or OnDelete for manual pod-by-pod control.",
+          "required": [],
+          "title": "type"
+        }
+      },
+      "required": [
+        "rollingUpdate"
+      ],
+      "title": "updateStrategy",
+      "type": "object"
     }
   },
   "required": [
@@ -834,6 +873,7 @@
     "startupProbe",
     "readinessProbe",
     "pdb",
+    "updateStrategy",
     "storage",
     "secrets",
     "typesense",
