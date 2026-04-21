@@ -55,19 +55,20 @@ tests:
       - equal:
           path: .spec.template.spec.containers[0].startupProbe
           value:
-            failureThreshold: 10
+            failureThreshold: 60
             httpGet:
               path: /health
               port: http
             periodSeconds: 10
+            timeoutSeconds: 3
       - equal:
           path: .spec.template.spec.containers[0].livenessProbe
           value:
-            failureThreshold: 2
-            httpGet:
-              path: /health
+            failureThreshold: 6
+            tcpSocket:
               port: http
-            periodSeconds: 10
+            periodSeconds: 20
+            timeoutSeconds: 3
       - notExists:
           path: .spec.volumeClaimTemplates[0].spec.storageClassName
       - equal:
@@ -287,11 +288,12 @@ tests:
       - equal:
           path: .spec.template.spec.containers[0].readinessProbe
           value:
-            failureThreshold: 3
+            failureThreshold: 12
             httpGet:
               path: /health
               port: http
-            periodSeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
   - it: should render default anti-affinity but not tolerations or topologySpreadConstraints when empty
     asserts:
       - notFailedTemplate: {}

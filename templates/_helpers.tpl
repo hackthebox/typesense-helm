@@ -65,6 +65,31 @@ Create the name of the service account to use
 {{- end }}
 
 {{/*
+Render a probe with a single handler selected by .type (httpGet or tcpSocket).
+This avoids Helm's map-merge producing both handlers simultaneously when users
+override just the type in their values, which Kubernetes rejects.
+*/}}
+{{- define "typesense.probe" -}}
+{{- $p := . -}}
+{{- if eq $p.type "tcpSocket" }}
+tcpSocket: {{- toYaml $p.tcpSocket | nindent 2 }}
+{{- else }}
+httpGet: {{- toYaml $p.httpGet | nindent 2 }}
+{{- end }}
+failureThreshold: {{ $p.failureThreshold }}
+periodSeconds: {{ $p.periodSeconds }}
+{{- with $p.timeoutSeconds }}
+timeoutSeconds: {{ . }}
+{{- end }}
+{{- with $p.successThreshold }}
+successThreshold: {{ . }}
+{{- end }}
+{{- with $p.initialDelaySeconds }}
+initialDelaySeconds: {{ . }}
+{{- end }}
+{{- end }}
+
+{{/*
 Create the nodeslist
 */}}
 {{- define "typesense.nodesList" -}}

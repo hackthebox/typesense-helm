@@ -119,38 +119,59 @@ gateway:
       namespace: "istio-system"
     extras: []
 
-# -- Resource requests and limits for the Typesense container
-resources: {}
+# -- Resource requests and limits for the Typesense container.
+# Typesense requires at least 2 vCPUs to operate correctly. No CPU limit is
+# set by default to avoid throttling during indexing and Raft catch-up.
+resources:
+  requests:
+    cpu: 2000m
 
 livenessProbe:
-  # -- HTTP GET path and port to check Typesense health for liveness
+  # -- Probe type: 'tcpSocket' or 'httpGet'.
+  # Default is tcpSocket to check only that the process is alive and listening.
+  # Avoid httpGet /health for liveness: Typesense returns 503 when the write
+  # queue exceeds --healthy-write-lag (default 500), which occurs normally
+  # during Raft catch-up after a restart, causing a liveness-triggered restart
+  # loop that prevents the cluster from ever recovering.
+  type: tcpSocket
   httpGet:
     path: /health
+    port: http
+  tcpSocket:
     port: http
   # -- Number of failed liveness checks before restarting the container
-  failureThreshold: 2
+  failureThreshold: 6
   # -- Period (in seconds) to perform the liveness check
-  periodSeconds: 10
+  periodSeconds: 20
+  timeoutSeconds: 3
 
 startupProbe:
-  # -- HTTP GET path and port to check Typesense health for startup
+  # -- Probe type: 'httpGet' or 'tcpSocket'
+  type: httpGet
   httpGet:
     path: /health
+    port: http
+  tcpSocket:
     port: http
   # -- Number of failed startup checks before marking the container as unhealthy
-  failureThreshold: 10
+  failureThreshold: 60
   # -- Period (in seconds) to perform the startup check
   periodSeconds: 10
+  timeoutSeconds: 3
 
 readinessProbe:
-  # -- HTTP GET path and port to check Typesense readiness
+  # -- Probe type: 'httpGet' or 'tcpSocket'
+  type: httpGet
   httpGet:
     path: /health
     port: http
+  tcpSocket:
+    port: http
   # -- Period (in seconds) to perform the readiness check
-  periodSeconds: 5
+  periodSeconds: 10
   # -- Number of failed readiness checks before marking the pod as unready
-  failureThreshold: 3
+  failureThreshold: 12
+  timeoutSeconds: 3
 
 # -- Node selector to schedule pods on specific nodes (optional)
 nodeSelector: {}
