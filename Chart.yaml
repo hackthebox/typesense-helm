@@ -1,9 +1,11 @@
 apiVersion: v2
 name: typesense
 description: >-
-  Deploy Typesense search engine on Kubernetes with Raft-based HA clustering, Prometheus metrics, and Gateway API support. This chart is not officially maintained by or affiliated with the Typesense project.
+  Deploy Typesense search engine on Kubernetes with Raft-based HA clustering,
+  Prometheus metrics, and Gateway API support. This chart is not officially
+  maintained by or affiliated with the Typesense project.
 type: application
-version: 1.1.0
+version: 1.1.1
 appVersion: "30.1"
 icon: https://typesense.org/typesense-logo.svg
 home: https://github.com/hackthebox/typesense-helm
@@ -36,5 +38,9 @@ annotations:
     - name: metrics-exporter
       image: imatefx/typesense-prometheus-exporter:v0.1.5
   artifacthub.io/changes: |
-    - kind: added
-      description: Initial open-source release
+    - kind: fixed
+      description: "liveness probe default changed to tcpSocket to prevent restart loops during Raft catch-up"
+    - kind: changed
+      description: "probe type is now controlled via .type field (httpGet or tcpSocket) to avoid Helm merge producing multiple handlers"
+    - kind: changed
+      description: "default CPU request set to 2000m per Typesense minimum requirements"
