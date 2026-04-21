@@ -87,7 +87,7 @@ jobs:
           CHART_VERSION: ${{ steps.chart.outputs.version }}
           REPO_OWNER: ${{ github.repository_owner }}
         run: |
-          OUTPUT=$(helm push "${CHART_NAME}-${CHART_VERSION}.tgz" "oci://${REGISTRY}/${REPO_OWNER}/helm")
+          OUTPUT=$(helm push "${CHART_NAME}-${CHART_VERSION}.tgz" "oci://${REGISTRY}/${REPO_OWNER}/helm" 2>&1)
           echo "${OUTPUT}"
           DIGEST=$(echo "${OUTPUT}" | grep '^Digest:' | awk '{print $2}')
           echo "digest=${DIGEST}" >> "${GITHUB_OUTPUT}"
