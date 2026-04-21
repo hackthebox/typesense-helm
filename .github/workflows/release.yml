@@ -44,6 +44,13 @@ jobs:
         uses: sigstore/cosign-installer@cad07c2e89fa2edd6e2d7bab4c1aa38e53f76003 # v4.1.1
 
       - name: Login to GHCR
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Login to GHCR (Helm)
         env:
           HELM_REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HELM_REGISTRY_USER: ${{ github.actor }}
