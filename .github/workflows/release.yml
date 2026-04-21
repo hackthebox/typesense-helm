@@ -81,20 +81,23 @@ jobs:
         run: helm package . --version "${RELEASE_VERSION}"
 
       - name: Push chart to GHCR
-        env:
-          CHART_NAME: ${{ steps.chart.outputs.name }}
-          CHART_VERSION: ${{ steps.chart.outputs.version }}
-          REPO_OWNER: ${{ github.repository_owner }}
-        run: helm push "${CHART_NAME}-${CHART_VERSION}.tgz" "oci://${REGISTRY}/${REPO_OWNER}/helm"
-
-      - name: Sign chart with Cosign (keyless)
+        id: push
         env:
           CHART_NAME: ${{ steps.chart.outputs.name }}
           CHART_VERSION: ${{ steps.chart.outputs.version }}
           REPO_OWNER: ${{ github.repository_owner }}
         run: |
-          DIGEST=$(crane digest "${REGISTRY}/${REPO_OWNER}/helm/${CHART_NAME}:${CHART_VERSION}")
-          cosign sign --yes "${REGISTRY}/${REPO_OWNER}/helm/${CHART_NAME}@${DIGEST}"
+          OUTPUT=$(helm push "${CHART_NAME}-${CHART_VERSION}.tgz" "oci://${REGISTRY}/${REPO_OWNER}/helm")
+          echo "${OUTPUT}"
+          DIGEST=$(echo "${OUTPUT}" | grep '^Digest:' | awk '{print $2}')
+          echo "digest=${DIGEST}" >> "${GITHUB_OUTPUT}"
+
+      - name: Sign chart with Cosign (keyless)
+        env:
+          CHART_NAME: ${{ steps.chart.outputs.name }}
+          REPO_OWNER: ${{ github.repository_owner }}
+          DIGEST: ${{ steps.push.outputs.digest }}
+        run: cosign sign --yes "${REGISTRY}/${REPO_OWNER}/helm/${CHART_NAME}@${DIGEST}"
 
       - name: Summary
         env:
