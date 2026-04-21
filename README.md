@@ -1,6 +1,6 @@
 # typesense
 
-![Version: 1.1.0](https://img.shields.io/badge/Version-1.1.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 30.1](https://img.shields.io/badge/AppVersion-30.1-informational?style=flat-square)
+![Version: 1.1.1](https://img.shields.io/badge/Version-1.1.1-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 30.1](https://img.shields.io/badge/AppVersion-30.1-informational?style=flat-square)
 
 [![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/typesense)](https://artifacthub.io/packages/search?repo=typesense)
 
@@ -233,9 +233,13 @@ storage:
 | ingress.enabled | bool | `false` | Enable or disable Ingress for the application |
 | ingress.hosts | list | `[]` | List of hostnames the Ingress will route traffic for |
 | ingress.prefix | string | `"/"` | The URL path prefix for the application |
-| livenessProbe.failureThreshold | int | `2` | Number of failed liveness checks before restarting the container |
-| livenessProbe.httpGet | object | `{"path":"/health","port":"http"}` | HTTP GET path and port to check Typesense health for liveness |
-| livenessProbe.periodSeconds | int | `10` | Period (in seconds) to perform the liveness check |
+| livenessProbe.failureThreshold | int | `6` | Number of failed liveness checks before restarting the container |
+| livenessProbe.httpGet.path | string | `"/health"` |  |
+| livenessProbe.httpGet.port | string | `"http"` |  |
+| livenessProbe.periodSeconds | int | `20` | Period (in seconds) to perform the liveness check |
+| livenessProbe.tcpSocket.port | string | `"http"` |  |
+| livenessProbe.timeoutSeconds | int | `3` |  |
+| livenessProbe.type | string | `"tcpSocket"` | Probe type: 'tcpSocket' or 'httpGet'. Default is tcpSocket to check only that the process is alive and listening. Avoid httpGet /health for liveness: Typesense returns 503 when the write queue exceeds --healthy-write-lag (default 500), which occurs normally during Raft catch-up after a restart, causing a liveness-triggered restart loop that prevents the cluster from ever recovering. |
 | metrics.enabled | bool | `false` | Enable Prometheus metrics sidecar |
 | metrics.image.pullPolicy | string | `"IfNotPresent"` | Image pull policy for metrics exporter |
 | metrics.image.repository | string | `"imatefx/typesense-prometheus-exporter"` | Metrics exporter image repository |
@@ -255,11 +259,15 @@ storage:
 | podSecurityContext.runAsGroup | int | `3000` | Group ID for running the Typesense process |
 | podSecurityContext.runAsNonRoot | bool | `true` | Ensure the container does not run as root |
 | podSecurityContext.runAsUser | int | `10000` | User ID for running the Typesense process |
-| readinessProbe.failureThreshold | int | `3` | Number of failed readiness checks before marking the pod as unready |
-| readinessProbe.httpGet | object | `{"path":"/health","port":"http"}` | HTTP GET path and port to check Typesense readiness |
-| readinessProbe.periodSeconds | int | `5` | Period (in seconds) to perform the readiness check |
+| readinessProbe.failureThreshold | int | `12` | Number of failed readiness checks before marking the pod as unready |
+| readinessProbe.httpGet.path | string | `"/health"` |  |
+| readinessProbe.httpGet.port | string | `"http"` |  |
+| readinessProbe.periodSeconds | int | `10` | Period (in seconds) to perform the readiness check |
+| readinessProbe.tcpSocket.port | string | `"http"` |  |
+| readinessProbe.timeoutSeconds | int | `3` |  |
+| readinessProbe.type | string | `"httpGet"` | Probe type: 'httpGet' or 'tcpSocket' |
 | replicaCount | int | `3` | Number of replicas for the Typesense deployment |
-| resources | object | `{}` | Resource requests and limits for the Typesense container |
+| resources | object | `{"requests":{"cpu":"2000m"}}` | Resource requests and limits for the Typesense container. Typesense requires at least 2 vCPUs to operate correctly. No CPU limit is set by default to avoid throttling during indexing and Raft catch-up. |
 | secrets.externalSecret.enabled | bool | `false` | Enable or disable ExternalSecret creation (requires external-secrets operator) |
 | secrets.externalSecret.extractKey | string | `""` | The key path to extract secrets from |
 | secrets.externalSecret.storeName | string | `""` | The name of the ClusterSecretStore or SecretStore to use |
@@ -274,9 +282,13 @@ storage:
 | serviceAccount.automountServiceAccountToken | bool | `false` | Whether to automount the ServiceAccount token |
 | serviceAccount.create | bool | `true` | Whether to create a ServiceAccount |
 | serviceAccount.name | string | `""` | Name of the ServiceAccount. Defaults to fullname |
-| startupProbe.failureThreshold | int | `10` | Number of failed startup checks before marking the container as unhealthy |
-| startupProbe.httpGet | object | `{"path":"/health","port":"http"}` | HTTP GET path and port to check Typesense health for startup |
+| startupProbe.failureThreshold | int | `60` | Number of failed startup checks before marking the container as unhealthy |
+| startupProbe.httpGet.path | string | `"/health"` |  |
+| startupProbe.httpGet.port | string | `"http"` |  |
 | startupProbe.periodSeconds | int | `10` | Period (in seconds) to perform the startup check |
+| startupProbe.tcpSocket.port | string | `"http"` |  |
+| startupProbe.timeoutSeconds | int | `3` |  |
+| startupProbe.type | string | `"httpGet"` | Probe type: 'httpGet' or 'tcpSocket' |
 | storage.className | string | `nil` | Storage class to use for Persistent Volume Claims (PVC) |
 | storage.size | string | `"10Gi"` | Size of the persistent storage volume (e.g., 10Gi) |
 | terminationGracePeriodSeconds | int | `300` | Termination grace period in seconds. Typesense recommends 300s to allow graceful shutdown. |
