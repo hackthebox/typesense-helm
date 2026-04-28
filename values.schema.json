@@ -180,10 +180,11 @@
     "livenessProbe": {
       "properties": {
         "failureThreshold": {
-          "default": "6",
+          "default": 6,
           "description": "Number of failed liveness checks before restarting the container",
-          "required": [],
-          "title": "failureThreshold"
+          "minimum": 1,
+          "title": "failureThreshold",
+          "type": "integer"
         },
         "httpGet": {
           "properties": {
@@ -206,10 +207,11 @@
           "type": "object"
         },
         "periodSeconds": {
-          "default": "20",
+          "default": 20,
           "description": "Period (in seconds) to perform the liveness check",
-          "required": [],
-          "title": "periodSeconds"
+          "minimum": 1,
+          "title": "periodSeconds",
+          "type": "integer"
         },
         "tcpSocket": {
           "properties": {
@@ -227,6 +229,8 @@
         },
         "timeoutSeconds": {
           "default": 3,
+          "description": " type: integer minimum: 1 @schema",
+          "minimum": 1,
           "title": "timeoutSeconds",
           "type": "integer"
         },
@@ -239,8 +243,7 @@
       },
       "required": [
         "httpGet",
-        "tcpSocket",
-        "timeoutSeconds"
+        "tcpSocket"
       ],
       "title": "livenessProbe",
       "type": "object"
@@ -378,16 +381,18 @@
     "podSecurityContext": {
       "properties": {
         "fsGroup": {
-          "default": "2000",
+          "default": 2000,
           "description": "Group ID for the filesystem of the Typesense container",
-          "required": [],
-          "title": "fsGroup"
+          "minimum": 0,
+          "title": "fsGroup",
+          "type": "integer"
         },
         "runAsGroup": {
-          "default": "3000",
+          "default": 3000,
           "description": "Group ID for running the Typesense process",
-          "required": [],
-          "title": "runAsGroup"
+          "minimum": 0,
+          "title": "runAsGroup",
+          "type": "integer"
         },
         "runAsNonRoot": {
           "default": "true",
@@ -396,10 +401,11 @@
           "title": "runAsNonRoot"
         },
         "runAsUser": {
-          "default": "10000",
+          "default": 10000,
           "description": "User ID for running the Typesense process",
-          "required": [],
-          "title": "runAsUser"
+          "minimum": 0,
+          "title": "runAsUser",
+          "type": "integer"
         }
       },
       "required": [],
@@ -409,10 +415,11 @@
     "readinessProbe": {
       "properties": {
         "failureThreshold": {
-          "default": "12",
+          "default": 12,
           "description": "Number of failed readiness checks before marking the pod as unready",
-          "required": [],
-          "title": "failureThreshold"
+          "minimum": 1,
+          "title": "failureThreshold",
+          "type": "integer"
         },
         "httpGet": {
           "properties": {
@@ -435,10 +442,11 @@
           "type": "object"
         },
         "periodSeconds": {
-          "default": "10",
+          "default": 10,
           "description": "Period (in seconds) to perform the readiness check",
-          "required": [],
-          "title": "periodSeconds"
+          "minimum": 1,
+          "title": "periodSeconds",
+          "type": "integer"
         },
         "tcpSocket": {
           "properties": {
@@ -456,6 +464,8 @@
         },
         "timeoutSeconds": {
           "default": 3,
+          "description": " type: integer minimum: 1 @schema",
+          "minimum": 1,
           "title": "timeoutSeconds",
           "type": "integer"
         },
@@ -468,8 +478,7 @@
       },
       "required": [
         "httpGet",
-        "tcpSocket",
-        "timeoutSeconds"
+        "tcpSocket"
       ],
       "title": "readinessProbe",
       "type": "object"
@@ -651,10 +660,11 @@
     "startupProbe": {
       "properties": {
         "failureThreshold": {
-          "default": "60",
+          "default": 60,
           "description": "Number of failed startup checks before marking the container as unhealthy",
-          "required": [],
-          "title": "failureThreshold"
+          "minimum": 1,
+          "title": "failureThreshold",
+          "type": "integer"
         },
         "httpGet": {
           "properties": {
@@ -677,10 +687,11 @@
           "type": "object"
         },
         "periodSeconds": {
-          "default": "10",
+          "default": 10,
           "description": "Period (in seconds) to perform the startup check",
-          "required": [],
-          "title": "periodSeconds"
+          "minimum": 1,
+          "title": "periodSeconds",
+          "type": "integer"
         },
         "tcpSocket": {
           "properties": {
@@ -698,6 +709,8 @@
         },
         "timeoutSeconds": {
           "default": 3,
+          "description": " type: integer minimum: 1 @schema",
+          "minimum": 1,
           "title": "timeoutSeconds",
           "type": "integer"
         },
@@ -710,8 +723,7 @@
       },
       "required": [
         "httpGet",
-        "tcpSocket",
-        "timeoutSeconds"
+        "tcpSocket"
       ],
       "title": "startupProbe",
       "type": "object"
@@ -736,10 +748,11 @@
       "type": "object"
     },
     "terminationGracePeriodSeconds": {
-      "default": "300",
+      "default": 300,
       "description": "Termination grace period in seconds. Typesense recommends 300s to allow graceful shutdown.",
-      "required": [],
-      "title": "terminationGracePeriodSeconds"
+      "minimum": 0,
+      "title": "terminationGracePeriodSeconds",
+      "type": "integer"
     },
     "tolerations": {
       "description": "Tolerations for pod scheduling",

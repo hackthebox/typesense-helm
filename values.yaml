@@ -25,6 +25,10 @@ nameOverride: ""
 # -- Override the full name of the release (optional)
 fullnameOverride: ""
 
+# @schema
+# type: integer
+# minimum: 0
+# @schema
 # -- Termination grace period in seconds. Typesense recommends 300s to allow graceful shutdown.
 terminationGracePeriodSeconds: 300
 
@@ -34,10 +38,22 @@ podAnnotations: {}
 podLabels: {}
 
 podSecurityContext:
+  # @schema
+  # type: integer
+  # minimum: 0
+  # @schema
   # -- Group ID for the filesystem of the Typesense container
   fsGroup: 2000
+  # @schema
+  # type: integer
+  # minimum: 0
+  # @schema
   # -- User ID for running the Typesense process
   runAsUser: 10000
+  # @schema
+  # type: integer
+  # minimum: 0
+  # @schema
   # -- Group ID for running the Typesense process
   runAsGroup: 3000
   # -- Ensure the container does not run as root
@@ -150,10 +166,22 @@ livenessProbe:
     port: http
   tcpSocket:
     port: http
+  # @schema
+  # type: integer
+  # minimum: 1
+  # @schema
   # -- Number of failed liveness checks before restarting the container
   failureThreshold: 6
+  # @schema
+  # type: integer
+  # minimum: 1
+  # @schema
   # -- Period (in seconds) to perform the liveness check
   periodSeconds: 20
+  # @schema
+  # type: integer
+  # minimum: 1
+  # @schema
   timeoutSeconds: 3
 
 startupProbe:
@@ -164,10 +192,22 @@ startupProbe:
     port: http
   tcpSocket:
     port: http
+  # @schema
+  # type: integer
+  # minimum: 1
+  # @schema
   # -- Number of failed startup checks before marking the container as unhealthy
   failureThreshold: 60
+  # @schema
+  # type: integer
+  # minimum: 1
+  # @schema
   # -- Period (in seconds) to perform the startup check
   periodSeconds: 10
+  # @schema
+  # type: integer
+  # minimum: 1
+  # @schema
   timeoutSeconds: 3
 
 readinessProbe:
@@ -178,10 +218,22 @@ readinessProbe:
     port: http
   tcpSocket:
     port: http
+  # @schema
+  # type: integer
+  # minimum: 1
+  # @schema
   # -- Period (in seconds) to perform the readiness check
   periodSeconds: 10
+  # @schema
+  # type: integer
+  # minimum: 1
+  # @schema
   # -- Number of failed readiness checks before marking the pod as unready
   failureThreshold: 12
+  # @schema
+  # type: integer
+  # minimum: 1
+  # @schema
   timeoutSeconds: 3
 
 # -- Node selector to schedule pods on specific nodes (optional)
