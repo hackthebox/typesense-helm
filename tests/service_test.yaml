@@ -31,6 +31,7 @@ tests:
             port: 8108
             targetPort: http
             protocol: TCP
+            appProtocol: http2
             name: http
       - contains:
           path: .spec.ports
@@ -81,6 +82,7 @@ tests:
             port: 8108
             targetPort: http
             protocol: TCP
+            appProtocol: http2
             name: http
   - it: should render the service when gateway is enabled with correct spec
     set:
@@ -104,6 +106,7 @@ tests:
             port: 8108
             targetPort: http
             protocol: TCP
+            appProtocol: http2
             name: http
   - it: should be possible to override the service port for both services
     set:
