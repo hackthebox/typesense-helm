@@ -181,6 +181,7 @@ livenessProbe:
   # @schema
   # type: integer
   # minimum: 1
+  # description: Timeout in seconds for the liveness check
   # @schema
   timeoutSeconds: 3
 
@@ -207,6 +208,7 @@ startupProbe:
   # @schema
   # type: integer
   # minimum: 1
+  # description: Timeout in seconds for the startup check
   # @schema
   timeoutSeconds: 3
 
@@ -233,6 +235,7 @@ readinessProbe:
   # @schema
   # type: integer
   # minimum: 1
+  # description: Timeout in seconds for the readiness check
   # @schema
   timeoutSeconds: 3
 

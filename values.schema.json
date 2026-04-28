@@ -229,7 +229,7 @@
         },
         "timeoutSeconds": {
           "default": 3,
-          "description": " type: integer minimum: 1 @schema",
+          "description": " type: integer minimum: 1 description: Timeout in seconds for the liveness check @schema",
           "minimum": 1,
           "title": "timeoutSeconds",
           "type": "integer"
@@ -464,7 +464,7 @@
         },
         "timeoutSeconds": {
           "default": 3,
-          "description": " type: integer minimum: 1 @schema",
+          "description": " type: integer minimum: 1 description: Timeout in seconds for the readiness check @schema",
           "minimum": 1,
           "title": "timeoutSeconds",
           "type": "integer"
@@ -709,7 +709,7 @@
         },
         "timeoutSeconds": {
           "default": 3,
-          "description": " type: integer minimum: 1 @schema",
+          "description": " type: integer minimum: 1 description: Timeout in seconds for the startup check @schema",
           "minimum": 1,
           "title": "timeoutSeconds",
           "type": "integer"
