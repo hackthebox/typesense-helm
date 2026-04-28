@@ -25,6 +25,10 @@ nameOverride: ""
 # -- Override the full name of the release (optional)
 fullnameOverride: ""
 
+# @schema
+# type: integer
+# minimum: 0
+# @schema
 # -- Termination grace period in seconds. Typesense recommends 300s to allow graceful shutdown.
 terminationGracePeriodSeconds: 300
 
@@ -34,10 +38,22 @@ podAnnotations: {}
 podLabels: {}
 
 podSecurityContext:
+  # @schema
+  # type: integer
+  # minimum: 0
+  # @schema
   # -- Group ID for the filesystem of the Typesense container
   fsGroup: 2000
+  # @schema
+  # type: integer
+  # minimum: 0
+  # @schema
   # -- User ID for running the Typesense process
   runAsUser: 10000
+  # @schema
+  # type: integer
+  # minimum: 0
+  # @schema
   # -- Group ID for running the Typesense process
   runAsGroup: 3000
   # -- Ensure the container does not run as root
@@ -65,6 +81,9 @@ service:
   port: 8108
 
 ingress:
+  # @schema
+  # type: boolean
+  # @schema
   # -- Enable or disable Ingress for the application
   enabled: false
   # -- The name of the Ingress class to use (e.g., nginx)
@@ -77,6 +96,9 @@ ingress:
   prefix: "/"
 
 gateway:
+  # @schema
+  # type: boolean
+  # @schema
   # -- Enable or disable Gateway API for the application
   enabled: false
   # -- List of hostnames the Gateway will route traffic for
@@ -124,6 +146,11 @@ gateway:
 # set by default to avoid throttling during indexing and Raft catch-up.
 resources:
   requests:
+    # @schema
+    # anyOf:
+    #   - type: string
+    #   - type: number
+    # @schema
     cpu: 2000m
 
 livenessProbe:
@@ -139,10 +166,23 @@ livenessProbe:
     port: http
   tcpSocket:
     port: http
+  # @schema
+  # type: integer
+  # minimum: 1
+  # @schema
   # -- Number of failed liveness checks before restarting the container
   failureThreshold: 6
+  # @schema
+  # type: integer
+  # minimum: 1
+  # @schema
   # -- Period (in seconds) to perform the liveness check
   periodSeconds: 20
+  # @schema
+  # type: integer
+  # minimum: 1
+  # description: Timeout in seconds for the liveness check
+  # @schema
   timeoutSeconds: 3
 
 startupProbe:
@@ -153,10 +193,23 @@ startupProbe:
     port: http
   tcpSocket:
     port: http
+  # @schema
+  # type: integer
+  # minimum: 1
+  # @schema
   # -- Number of failed startup checks before marking the container as unhealthy
   failureThreshold: 60
+  # @schema
+  # type: integer
+  # minimum: 1
+  # @schema
   # -- Period (in seconds) to perform the startup check
   periodSeconds: 10
+  # @schema
+  # type: integer
+  # minimum: 1
+  # description: Timeout in seconds for the startup check
+  # @schema
   timeoutSeconds: 3
 
 readinessProbe:
@@ -167,10 +220,23 @@ readinessProbe:
     port: http
   tcpSocket:
     port: http
+  # @schema
+  # type: integer
+  # minimum: 1
+  # @schema
   # -- Period (in seconds) to perform the readiness check
   periodSeconds: 10
+  # @schema
+  # type: integer
+  # minimum: 1
+  # @schema
   # -- Number of failed readiness checks before marking the pod as unready
   failureThreshold: 12
+  # @schema
+  # type: integer
+  # minimum: 1
+  # description: Timeout in seconds for the readiness check
+  # @schema
   timeoutSeconds: 3
 
 # -- Node selector to schedule pods on specific nodes (optional)
@@ -269,6 +335,9 @@ secrets:
   # -- Whether the secretRef in envFrom is optional (pods start even if secret is missing)
   optional: true
   externalSecret:
+    # @schema
+    # type: boolean
+    # @schema
     # -- Enable or disable ExternalSecret creation (requires external-secrets operator)
     enabled: false
     # -- The name of the ClusterSecretStore or SecretStore to use
@@ -363,6 +432,9 @@ serviceAccount:
   name: ""
   # -- Annotations to add to the ServiceAccount (e.g., for IRSA)
   annotations: {}
+  # @schema
+  # type: boolean
+  # @schema
   # -- Whether to automount the ServiceAccount token
   automountServiceAccountToken: false
 
@@ -389,6 +461,9 @@ metrics:
   # -- Resource requests and limits for the metrics sidecar
   resources: {}
   serviceMonitor:
+    # @schema
+    # type: boolean
+    # @schema
     # -- Enable ServiceMonitor for Prometheus scraping
     enabled: false
     # -- Scrape interval

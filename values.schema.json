@@ -32,10 +32,10 @@
     "gateway": {
       "properties": {
         "enabled": {
-          "default": "false",
+          "default": false,
           "description": "Enable or disable Gateway API for the application",
-          "required": [],
-          "title": "enabled"
+          "title": "enabled",
+          "type": "boolean"
         },
         "hosts": {
           "description": "List of hostnames the Gateway will route traffic for",
@@ -153,10 +153,10 @@
           "title": "className"
         },
         "enabled": {
-          "default": "false",
+          "default": false,
           "description": "Enable or disable Ingress for the application",
-          "required": [],
-          "title": "enabled"
+          "title": "enabled",
+          "type": "boolean"
         },
         "hosts": {
           "description": "List of hostnames the Ingress will route traffic for",
@@ -180,10 +180,11 @@
     "livenessProbe": {
       "properties": {
         "failureThreshold": {
-          "default": "6",
+          "default": 6,
           "description": "Number of failed liveness checks before restarting the container",
-          "required": [],
-          "title": "failureThreshold"
+          "minimum": 1,
+          "title": "failureThreshold",
+          "type": "integer"
         },
         "httpGet": {
           "properties": {
@@ -206,10 +207,11 @@
           "type": "object"
         },
         "periodSeconds": {
-          "default": "20",
+          "default": 20,
           "description": "Period (in seconds) to perform the liveness check",
-          "required": [],
-          "title": "periodSeconds"
+          "minimum": 1,
+          "title": "periodSeconds",
+          "type": "integer"
         },
         "tcpSocket": {
           "properties": {
@@ -227,6 +229,8 @@
         },
         "timeoutSeconds": {
           "default": 3,
+          "description": " type: integer minimum: 1 description: Timeout in seconds for the liveness check @schema",
+          "minimum": 1,
           "title": "timeoutSeconds",
           "type": "integer"
         },
@@ -239,8 +243,7 @@
       },
       "required": [
         "httpGet",
-        "tcpSocket",
-        "timeoutSeconds"
+        "tcpSocket"
       ],
       "title": "livenessProbe",
       "type": "object"
@@ -294,10 +297,10 @@
         "serviceMonitor": {
           "properties": {
             "enabled": {
-              "default": "false",
+              "default": false,
               "description": "Enable ServiceMonitor for Prometheus scraping",
-              "required": [],
-              "title": "enabled"
+              "title": "enabled",
+              "type": "boolean"
             },
             "interval": {
               "default": "30s",
@@ -378,16 +381,18 @@
     "podSecurityContext": {
       "properties": {
         "fsGroup": {
-          "default": "2000",
+          "default": 2000,
           "description": "Group ID for the filesystem of the Typesense container",
-          "required": [],
-          "title": "fsGroup"
+          "minimum": 0,
+          "title": "fsGroup",
+          "type": "integer"
         },
         "runAsGroup": {
-          "default": "3000",
+          "default": 3000,
           "description": "Group ID for running the Typesense process",
-          "required": [],
-          "title": "runAsGroup"
+          "minimum": 0,
+          "title": "runAsGroup",
+          "type": "integer"
         },
         "runAsNonRoot": {
           "default": "true",
@@ -396,10 +401,11 @@
           "title": "runAsNonRoot"
         },
         "runAsUser": {
-          "default": "10000",
+          "default": 10000,
           "description": "User ID for running the Typesense process",
-          "required": [],
-          "title": "runAsUser"
+          "minimum": 0,
+          "title": "runAsUser",
+          "type": "integer"
         }
       },
       "required": [],
@@ -409,10 +415,11 @@
     "readinessProbe": {
       "properties": {
         "failureThreshold": {
-          "default": "12",
+          "default": 12,
           "description": "Number of failed readiness checks before marking the pod as unready",
-          "required": [],
-          "title": "failureThreshold"
+          "minimum": 1,
+          "title": "failureThreshold",
+          "type": "integer"
         },
         "httpGet": {
           "properties": {
@@ -435,10 +442,11 @@
           "type": "object"
         },
         "periodSeconds": {
-          "default": "10",
+          "default": 10,
           "description": "Period (in seconds) to perform the readiness check",
-          "required": [],
-          "title": "periodSeconds"
+          "minimum": 1,
+          "title": "periodSeconds",
+          "type": "integer"
         },
         "tcpSocket": {
           "properties": {
@@ -456,6 +464,8 @@
         },
         "timeoutSeconds": {
           "default": 3,
+          "description": " type: integer minimum: 1 description: Timeout in seconds for the readiness check @schema",
+          "minimum": 1,
           "title": "timeoutSeconds",
           "type": "integer"
         },
@@ -468,8 +478,7 @@
       },
       "required": [
         "httpGet",
-        "tcpSocket",
-        "timeoutSeconds"
+        "tcpSocket"
       ],
       "title": "readinessProbe",
       "type": "object"
@@ -487,14 +496,21 @@
         "requests": {
           "properties": {
             "cpu": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                }
+              ],
               "default": "2000m",
-              "title": "cpu",
-              "type": "string"
+              "description": " anyOf:   - type: string   - type: number @schema",
+              "required": [],
+              "title": "cpu"
             }
           },
-          "required": [
-            "cpu"
-          ],
+          "required": [],
           "title": "requests",
           "type": "object"
         }
@@ -509,10 +525,10 @@
         "externalSecret": {
           "properties": {
             "enabled": {
-              "default": "false",
+              "default": false,
               "description": "Enable or disable ExternalSecret creation (requires external-secrets operator)",
-              "required": [],
-              "title": "enabled"
+              "title": "enabled",
+              "type": "boolean"
             },
             "extractKey": {
               "default": "",
@@ -619,10 +635,10 @@
           "title": "annotations"
         },
         "automountServiceAccountToken": {
-          "default": "false",
+          "default": false,
           "description": "Whether to automount the ServiceAccount token",
-          "required": [],
-          "title": "automountServiceAccountToken"
+          "title": "automountServiceAccountToken",
+          "type": "boolean"
         },
         "create": {
           "default": true,
@@ -644,10 +660,11 @@
     "startupProbe": {
       "properties": {
         "failureThreshold": {
-          "default": "60",
+          "default": 60,
           "description": "Number of failed startup checks before marking the container as unhealthy",
-          "required": [],
-          "title": "failureThreshold"
+          "minimum": 1,
+          "title": "failureThreshold",
+          "type": "integer"
         },
         "httpGet": {
           "properties": {
@@ -670,10 +687,11 @@
           "type": "object"
         },
         "periodSeconds": {
-          "default": "10",
+          "default": 10,
           "description": "Period (in seconds) to perform the startup check",
-          "required": [],
-          "title": "periodSeconds"
+          "minimum": 1,
+          "title": "periodSeconds",
+          "type": "integer"
         },
         "tcpSocket": {
           "properties": {
@@ -691,6 +709,8 @@
         },
         "timeoutSeconds": {
           "default": 3,
+          "description": " type: integer minimum: 1 description: Timeout in seconds for the startup check @schema",
+          "minimum": 1,
           "title": "timeoutSeconds",
           "type": "integer"
         },
@@ -703,8 +723,7 @@
       },
       "required": [
         "httpGet",
-        "tcpSocket",
-        "timeoutSeconds"
+        "tcpSocket"
       ],
       "title": "startupProbe",
       "type": "object"
@@ -729,10 +748,11 @@
       "type": "object"
     },
     "terminationGracePeriodSeconds": {
-      "default": "300",
+      "default": 300,
       "description": "Termination grace period in seconds. Typesense recommends 300s to allow graceful shutdown.",
-      "required": [],
-      "title": "terminationGracePeriodSeconds"
+      "minimum": 0,
+      "title": "terminationGracePeriodSeconds",
+      "type": "integer"
     },
     "tolerations": {
       "description": "Tolerations for pod scheduling",
