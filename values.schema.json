@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "properties": {
     "affinity": {
-      "description": "Affinity rules for pod scheduling. When unset and replicaCount \u003e 1, a soft pod anti-affinity on kubernetes.io/hostname is automatically applied. Set to a non-empty affinity object to override.",
+      "description": "Affinity rules for pod scheduling. When unset or empty and replicaCount \u003e 1, a soft pod anti-affinity on kubernetes.io/hostname is automatically applied. Set to a non-empty affinity object to override this default behavior.",
       "required": [],
       "title": "affinity",
       "type": "object"
@@ -180,13 +180,12 @@
     "livenessProbe": {
       "properties": {
         "failureThreshold": {
-          "default": "2",
+          "default": "6",
           "description": "Number of failed liveness checks before restarting the container",
           "required": [],
           "title": "failureThreshold"
         },
         "httpGet": {
-          "description": "HTTP GET path and port to check Typesense health for liveness",
           "properties": {
             "path": {
               "default": "/health",
@@ -203,16 +202,46 @@
             "path",
             "port"
           ],
-          "title": "httpGet"
+          "title": "httpGet",
+          "type": "object"
         },
         "periodSeconds": {
-          "default": "10",
+          "default": "20",
           "description": "Period (in seconds) to perform the liveness check",
           "required": [],
           "title": "periodSeconds"
+        },
+        "tcpSocket": {
+          "properties": {
+            "port": {
+              "default": "http",
+              "title": "port",
+              "type": "string"
+            }
+          },
+          "required": [
+            "port"
+          ],
+          "title": "tcpSocket",
+          "type": "object"
+        },
+        "timeoutSeconds": {
+          "default": 3,
+          "title": "timeoutSeconds",
+          "type": "integer"
+        },
+        "type": {
+          "default": "tcpSocket",
+          "description": "Probe type: 'tcpSocket' or 'httpGet'. Default is tcpSocket to check only that the process is alive and listening. Avoid httpGet /health for liveness: Typesense returns 503 when the write queue exceeds --healthy-write-lag (default 500), which occurs normally during Raft catch-up after a restart, causing a liveness-triggered restart loop that prevents the cluster from ever recovering.",
+          "required": [],
+          "title": "type"
         }
       },
-      "required": [],
+      "required": [
+        "httpGet",
+        "tcpSocket",
+        "timeoutSeconds"
+      ],
       "title": "livenessProbe",
       "type": "object"
     },
@@ -380,13 +409,12 @@
     "readinessProbe": {
       "properties": {
         "failureThreshold": {
-          "default": "3",
+          "default": "12",
           "description": "Number of failed readiness checks before marking the pod as unready",
           "required": [],
           "title": "failureThreshold"
         },
         "httpGet": {
-          "description": "HTTP GET path and port to check Typesense readiness",
           "properties": {
             "path": {
               "default": "/health",
@@ -403,16 +431,46 @@
             "path",
             "port"
           ],
-          "title": "httpGet"
+          "title": "httpGet",
+          "type": "object"
         },
         "periodSeconds": {
-          "default": "5",
+          "default": "10",
           "description": "Period (in seconds) to perform the readiness check",
           "required": [],
           "title": "periodSeconds"
+        },
+        "tcpSocket": {
+          "properties": {
+            "port": {
+              "default": "http",
+              "title": "port",
+              "type": "string"
+            }
+          },
+          "required": [
+            "port"
+          ],
+          "title": "tcpSocket",
+          "type": "object"
+        },
+        "timeoutSeconds": {
+          "default": 3,
+          "title": "timeoutSeconds",
+          "type": "integer"
+        },
+        "type": {
+          "default": "httpGet",
+          "description": "Probe type: 'httpGet' or 'tcpSocket'",
+          "required": [],
+          "title": "type"
         }
       },
-      "required": [],
+      "required": [
+        "httpGet",
+        "tcpSocket",
+        "timeoutSeconds"
+      ],
       "title": "readinessProbe",
       "type": "object"
     },
@@ -424,8 +482,26 @@
       "type": "integer"
     },
     "resources": {
-      "description": "Resource requests and limits for the Typesense container",
-      "required": [],
+      "description": "Resource requests and limits for the Typesense container. Typesense requires at least 2 vCPUs to operate correctly. No CPU limit is set by default to avoid throttling during indexing and Raft catch-up.",
+      "properties": {
+        "requests": {
+          "properties": {
+            "cpu": {
+              "default": "2000m",
+              "title": "cpu",
+              "type": "string"
+            }
+          },
+          "required": [
+            "cpu"
+          ],
+          "title": "requests",
+          "type": "object"
+        }
+      },
+      "required": [
+        "requests"
+      ],
       "title": "resources"
     },
     "secrets": {
@@ -568,13 +644,12 @@
     "startupProbe": {
       "properties": {
         "failureThreshold": {
-          "default": "10",
+          "default": "60",
           "description": "Number of failed startup checks before marking the container as unhealthy",
           "required": [],
           "title": "failureThreshold"
         },
         "httpGet": {
-          "description": "HTTP GET path and port to check Typesense health for startup",
           "properties": {
             "path": {
               "default": "/health",
@@ -591,16 +666,46 @@
             "path",
             "port"
           ],
-          "title": "httpGet"
+          "title": "httpGet",
+          "type": "object"
         },
         "periodSeconds": {
           "default": "10",
           "description": "Period (in seconds) to perform the startup check",
           "required": [],
           "title": "periodSeconds"
+        },
+        "tcpSocket": {
+          "properties": {
+            "port": {
+              "default": "http",
+              "title": "port",
+              "type": "string"
+            }
+          },
+          "required": [
+            "port"
+          ],
+          "title": "tcpSocket",
+          "type": "object"
+        },
+        "timeoutSeconds": {
+          "default": 3,
+          "title": "timeoutSeconds",
+          "type": "integer"
+        },
+        "type": {
+          "default": "httpGet",
+          "description": "Probe type: 'httpGet' or 'tcpSocket'",
+          "required": [],
+          "title": "type"
         }
       },
-      "required": [],
+      "required": [
+        "httpGet",
+        "tcpSocket",
+        "timeoutSeconds"
+      ],
       "title": "startupProbe",
       "type": "object"
     },
