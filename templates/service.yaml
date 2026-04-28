@@ -12,6 +12,7 @@ spec:
     - port: {{ .Values.service.port }}
       targetPort: http
       protocol: TCP
+      appProtocol: http2
       name: http
   selector:
     {{- include "typesense.selectorLabels" . | nindent 4 }}
@@ -32,6 +33,7 @@ spec:
     - port: {{ .Values.service.port }}
       targetPort: http
       protocol: TCP
+      appProtocol: http2
       name: http
     - port: 8107
       targetPort: tcp-peering
