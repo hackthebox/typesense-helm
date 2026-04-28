@@ -32,10 +32,10 @@
     "gateway": {
       "properties": {
         "enabled": {
-          "default": "false",
+          "default": false,
           "description": "Enable or disable Gateway API for the application",
-          "required": [],
-          "title": "enabled"
+          "title": "enabled",
+          "type": "boolean"
         },
         "hosts": {
           "description": "List of hostnames the Gateway will route traffic for",
@@ -153,10 +153,10 @@
           "title": "className"
         },
         "enabled": {
-          "default": "false",
+          "default": false,
           "description": "Enable or disable Ingress for the application",
-          "required": [],
-          "title": "enabled"
+          "title": "enabled",
+          "type": "boolean"
         },
         "hosts": {
           "description": "List of hostnames the Ingress will route traffic for",
@@ -294,10 +294,10 @@
         "serviceMonitor": {
           "properties": {
             "enabled": {
-              "default": "false",
+              "default": false,
               "description": "Enable ServiceMonitor for Prometheus scraping",
-              "required": [],
-              "title": "enabled"
+              "title": "enabled",
+              "type": "boolean"
             },
             "interval": {
               "default": "30s",
@@ -487,14 +487,21 @@
         "requests": {
           "properties": {
             "cpu": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                }
+              ],
               "default": "2000m",
-              "title": "cpu",
-              "type": "string"
+              "description": " anyOf:   - type: string   - type: number @schema",
+              "required": [],
+              "title": "cpu"
             }
           },
-          "required": [
-            "cpu"
-          ],
+          "required": [],
           "title": "requests",
           "type": "object"
         }
@@ -509,10 +516,10 @@
         "externalSecret": {
           "properties": {
             "enabled": {
-              "default": "false",
+              "default": false,
               "description": "Enable or disable ExternalSecret creation (requires external-secrets operator)",
-              "required": [],
-              "title": "enabled"
+              "title": "enabled",
+              "type": "boolean"
             },
             "extractKey": {
               "default": "",
@@ -619,10 +626,10 @@
           "title": "annotations"
         },
         "automountServiceAccountToken": {
-          "default": "false",
+          "default": false,
           "description": "Whether to automount the ServiceAccount token",
-          "required": [],
-          "title": "automountServiceAccountToken"
+          "title": "automountServiceAccountToken",
+          "type": "boolean"
         },
         "create": {
           "default": true,

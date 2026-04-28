@@ -168,6 +168,19 @@ tests:
             limits:
               cpu: "1000m"
               memory: "4Gi"
+  - it: should accept numeric cpu requests
+    set:
+      resources:
+        requests:
+          cpu: 2
+          memory: "2Gi"
+        limits:
+          memory: "4Gi"
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: .spec.template.spec.containers[0].resources.requests.cpu
+          value: 2
   - it: should be possible to add nodeSelector
     set:
       nodeSelector:
