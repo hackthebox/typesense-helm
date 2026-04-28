@@ -31,13 +31,21 @@ Create chart name and version as used by the chart label.
 {{- end }}
 
 {{/*
+Resolve the effective Typesense application version.
+*/}}
+{{- define "typesense.appVersion" -}}
+{{- .Values.image.tag | default .Chart.AppVersion -}}
+{{- end }}
+
+{{/*
 Common labels
 */}}
 {{- define "typesense.labels" -}}
 helm.sh/chart: {{ include "typesense.chart" . }}
 {{ include "typesense.selectorLabels" . }}
-{{- if .Chart.AppVersion }}
-app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+{{- $appVersion := include "typesense.appVersion" . }}
+{{- if $appVersion }}
+app.kubernetes.io/version: {{ $appVersion | quote }}
 {{- end }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- if .Chart.Annotations.team }}
