@@ -84,6 +84,18 @@ tests:
       - equal:
           path: .spec.replicas
           value: 5
+  - it: should use the effective image tag for app version labels when overridden
+    set:
+      image:
+        tag: "26.0"
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: .spec.template.metadata.labels["app.kubernetes.io/version"]
+          value: "26.0"
+      - equal:
+          path: .spec.template.spec.containers[0].image
+          value: typesense/typesense:26.0
   - it: should reject even replica counts greater than 1
     set:
       replicaCount: 4
