@@ -2,9 +2,10 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "properties": {
     "affinity": {
-      "description": "Affinity rules for pod scheduling",
+      "description": "Affinity rules for pod scheduling. When unset or empty and replicaCount \u003e 1, a soft pod anti-affinity on kubernetes.io/hostname is automatically applied. Set to a non-empty affinity object to override this default behavior.",
       "required": [],
-      "title": "affinity"
+      "title": "affinity",
+      "type": "object"
     },
     "backup": {
       "properties": {
@@ -138,10 +139,10 @@
     "gateway": {
       "properties": {
         "enabled": {
-          "default": "false",
+          "default": false,
           "description": "Enable or disable Gateway API for the application",
-          "required": [],
-          "title": "enabled"
+          "title": "enabled",
+          "type": "boolean"
         },
         "hosts": {
           "description": "List of hostnames the Gateway will route traffic for",
@@ -259,10 +260,10 @@
           "title": "className"
         },
         "enabled": {
-          "default": "false",
+          "default": false,
           "description": "Enable or disable Ingress for the application",
-          "required": [],
-          "title": "enabled"
+          "title": "enabled",
+          "type": "boolean"
         },
         "hosts": {
           "description": "List of hostnames the Ingress will route traffic for",
@@ -286,13 +287,13 @@
     "livenessProbe": {
       "properties": {
         "failureThreshold": {
-          "default": "2",
+          "default": 6,
           "description": "Number of failed liveness checks before restarting the container",
-          "required": [],
-          "title": "failureThreshold"
+          "minimum": 1,
+          "title": "failureThreshold",
+          "type": "integer"
         },
         "httpGet": {
-          "description": "HTTP GET path and port to check Typesense health for liveness",
           "properties": {
             "path": {
               "default": "/health",
@@ -309,16 +310,48 @@
             "path",
             "port"
           ],
-          "title": "httpGet"
+          "title": "httpGet",
+          "type": "object"
         },
         "periodSeconds": {
-          "default": "10",
+          "default": 20,
           "description": "Period (in seconds) to perform the liveness check",
+          "minimum": 1,
+          "title": "periodSeconds",
+          "type": "integer"
+        },
+        "tcpSocket": {
+          "properties": {
+            "port": {
+              "default": "http",
+              "title": "port",
+              "type": "string"
+            }
+          },
+          "required": [
+            "port"
+          ],
+          "title": "tcpSocket",
+          "type": "object"
+        },
+        "timeoutSeconds": {
+          "default": 3,
+          "description": " type: integer minimum: 1 description: Timeout in seconds for the liveness check @schema",
+          "minimum": 1,
+          "title": "timeoutSeconds",
+          "type": "integer"
+        },
+        "type": {
+          "default": "tcpSocket",
+          "description": "Probe type: 'tcpSocket' or 'httpGet'. Default is tcpSocket to check only that the process is alive and listening. Avoid httpGet /health for liveness: Typesense returns 503 when the write queue exceeds --healthy-write-lag (default 500), which occurs normally during Raft catch-up after a restart, causing a liveness-triggered restart loop that prevents the cluster from ever recovering.",
           "required": [],
-          "title": "periodSeconds"
+          "title": "type"
         }
       },
-      "required": [],
+      "required": [
+        "httpGet",
+        "tcpSocket"
+      ],
       "title": "livenessProbe",
       "type": "object"
     },
@@ -371,10 +404,10 @@
         "serviceMonitor": {
           "properties": {
             "enabled": {
-              "default": "false",
+              "default": false,
               "description": "Enable ServiceMonitor for Prometheus scraping",
-              "required": [],
-              "title": "enabled"
+              "title": "enabled",
+              "type": "boolean"
             },
             "interval": {
               "default": "30s",
@@ -414,17 +447,28 @@
     "pdb": {
       "properties": {
         "enabled": {
-          "default": false,
-          "description": "Enable PodDisruptionBudget for Typesense StatefulSet",
+          "default": true,
+          "description": "Enable PodDisruptionBudget for Typesense StatefulSet. Automatically skipped when replicaCount is 1.",
           "title": "enabled",
           "type": "boolean"
         },
         "maxUnavailable": {
-          "default": 1,
-          "description": "Maximum number of pods that can be unavailable during disruption",
-          "minimum": 1,
-          "title": "maxUnavailable",
-          "type": "integer"
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "enum": [
+                "auto"
+              ],
+              "required": []
+            }
+          ],
+          "default": "auto",
+          "description": "Maximum number of pods that can be unavailable during disruption. Set to \"auto\" (default) to auto-calculate as floor(replicaCount/2), preserving Raft quorum. Set to 0 to block all voluntary disruptions. Any positive value is used directly and must not exceed floor(replicaCount/2).",
+          "required": [],
+          "title": "maxUnavailable"
         }
       },
       "required": [],
@@ -444,16 +488,18 @@
     "podSecurityContext": {
       "properties": {
         "fsGroup": {
-          "default": "2000",
+          "default": 2000,
           "description": "Group ID for the filesystem of the Typesense container",
-          "required": [],
-          "title": "fsGroup"
+          "minimum": 0,
+          "title": "fsGroup",
+          "type": "integer"
         },
         "runAsGroup": {
-          "default": "3000",
+          "default": 3000,
           "description": "Group ID for running the Typesense process",
-          "required": [],
-          "title": "runAsGroup"
+          "minimum": 0,
+          "title": "runAsGroup",
+          "type": "integer"
         },
         "runAsNonRoot": {
           "default": "true",
@@ -462,10 +508,11 @@
           "title": "runAsNonRoot"
         },
         "runAsUser": {
-          "default": "10000",
+          "default": 10000,
           "description": "User ID for running the Typesense process",
-          "required": [],
-          "title": "runAsUser"
+          "minimum": 0,
+          "title": "runAsUser",
+          "type": "integer"
         }
       },
       "required": [],
@@ -475,13 +522,13 @@
     "readinessProbe": {
       "properties": {
         "failureThreshold": {
-          "default": "3",
+          "default": 12,
           "description": "Number of failed readiness checks before marking the pod as unready",
-          "required": [],
-          "title": "failureThreshold"
+          "minimum": 1,
+          "title": "failureThreshold",
+          "type": "integer"
         },
         "httpGet": {
-          "description": "HTTP GET path and port to check Typesense readiness",
           "properties": {
             "path": {
               "default": "/health",
@@ -498,16 +545,48 @@
             "path",
             "port"
           ],
-          "title": "httpGet"
+          "title": "httpGet",
+          "type": "object"
         },
         "periodSeconds": {
-          "default": "5",
+          "default": 10,
           "description": "Period (in seconds) to perform the readiness check",
+          "minimum": 1,
+          "title": "periodSeconds",
+          "type": "integer"
+        },
+        "tcpSocket": {
+          "properties": {
+            "port": {
+              "default": "http",
+              "title": "port",
+              "type": "string"
+            }
+          },
+          "required": [
+            "port"
+          ],
+          "title": "tcpSocket",
+          "type": "object"
+        },
+        "timeoutSeconds": {
+          "default": 3,
+          "description": " type: integer minimum: 1 description: Timeout in seconds for the readiness check @schema",
+          "minimum": 1,
+          "title": "timeoutSeconds",
+          "type": "integer"
+        },
+        "type": {
+          "default": "httpGet",
+          "description": "Probe type: 'httpGet' or 'tcpSocket'",
           "required": [],
-          "title": "periodSeconds"
+          "title": "type"
         }
       },
-      "required": [],
+      "required": [
+        "httpGet",
+        "tcpSocket"
+      ],
       "title": "readinessProbe",
       "type": "object"
     },
@@ -519,8 +598,33 @@
       "type": "integer"
     },
     "resources": {
-      "description": "Resource requests and limits for the Typesense container",
-      "required": [],
+      "description": "Resource requests and limits for the Typesense container. Typesense requires at least 2 vCPUs to operate correctly. No CPU limit is set by default to avoid throttling during indexing and Raft catch-up.",
+      "properties": {
+        "requests": {
+          "properties": {
+            "cpu": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "default": "2000m",
+              "description": " anyOf:   - type: string   - type: number @schema",
+              "required": [],
+              "title": "cpu"
+            }
+          },
+          "required": [],
+          "title": "requests",
+          "type": "object"
+        }
+      },
+      "required": [
+        "requests"
+      ],
       "title": "resources"
     },
     "secrets": {
@@ -528,10 +632,10 @@
         "externalSecret": {
           "properties": {
             "enabled": {
-              "default": "false",
+              "default": false,
               "description": "Enable or disable ExternalSecret creation (requires external-secrets operator)",
-              "required": [],
-              "title": "enabled"
+              "title": "enabled",
+              "type": "boolean"
             },
             "extractKey": {
               "default": "",
@@ -638,10 +742,10 @@
           "title": "annotations"
         },
         "automountServiceAccountToken": {
-          "default": "false",
+          "default": false,
           "description": "Whether to automount the ServiceAccount token",
-          "required": [],
-          "title": "automountServiceAccountToken"
+          "title": "automountServiceAccountToken",
+          "type": "boolean"
         },
         "create": {
           "default": true,
@@ -663,13 +767,13 @@
     "startupProbe": {
       "properties": {
         "failureThreshold": {
-          "default": "10",
+          "default": 60,
           "description": "Number of failed startup checks before marking the container as unhealthy",
-          "required": [],
-          "title": "failureThreshold"
+          "minimum": 1,
+          "title": "failureThreshold",
+          "type": "integer"
         },
         "httpGet": {
-          "description": "HTTP GET path and port to check Typesense health for startup",
           "properties": {
             "path": {
               "default": "/health",
@@ -686,16 +790,48 @@
             "path",
             "port"
           ],
-          "title": "httpGet"
+          "title": "httpGet",
+          "type": "object"
         },
         "periodSeconds": {
-          "default": "10",
+          "default": 10,
           "description": "Period (in seconds) to perform the startup check",
+          "minimum": 1,
+          "title": "periodSeconds",
+          "type": "integer"
+        },
+        "tcpSocket": {
+          "properties": {
+            "port": {
+              "default": "http",
+              "title": "port",
+              "type": "string"
+            }
+          },
+          "required": [
+            "port"
+          ],
+          "title": "tcpSocket",
+          "type": "object"
+        },
+        "timeoutSeconds": {
+          "default": 3,
+          "description": " type: integer minimum: 1 description: Timeout in seconds for the startup check @schema",
+          "minimum": 1,
+          "title": "timeoutSeconds",
+          "type": "integer"
+        },
+        "type": {
+          "default": "httpGet",
+          "description": "Probe type: 'httpGet' or 'tcpSocket'",
           "required": [],
-          "title": "periodSeconds"
+          "title": "type"
         }
       },
-      "required": [],
+      "required": [
+        "httpGet",
+        "tcpSocket"
+      ],
       "title": "startupProbe",
       "type": "object"
     },
@@ -719,10 +855,11 @@
       "type": "object"
     },
     "terminationGracePeriodSeconds": {
-      "default": "300",
+      "default": 300,
       "description": "Termination grace period in seconds. Typesense recommends 300s to allow graceful shutdown.",
-      "required": [],
-      "title": "terminationGracePeriodSeconds"
+      "minimum": 0,
+      "title": "terminationGracePeriodSeconds",
+      "type": "integer"
     },
     "tolerations": {
       "description": "Tolerations for pod scheduling",
@@ -928,6 +1065,68 @@
         "logging"
       ],
       "title": "typesense",
+      "type": "object"
+    },
+    "updateStrategy": {
+      "description": "StatefulSet update strategy configuration. When type is RollingUpdate, rollingUpdate.maxUnavailable is required. When type is OnDelete, rollingUpdate is optional and ignored.",
+      "if": {
+        "properties": {
+          "type": {
+            "const": "RollingUpdate",
+            "required": []
+          }
+        },
+        "required": []
+      },
+      "properties": {
+        "rollingUpdate": {
+          "description": "Rolling update configuration. Only used when type is RollingUpdate.",
+          "properties": {
+            "maxUnavailable": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "enum": [
+                    "auto"
+                  ],
+                  "required": []
+                }
+              ],
+              "description": "Maximum number of pods unavailable during a rolling update. Set to \"auto\" to auto-calculate as floor(replicaCount/2). Set to 0 to block all voluntary pod replacements. Must not exceed floor(replicaCount/2).",
+              "required": []
+            }
+          },
+          "required": [],
+          "type": "object"
+        },
+        "type": {
+          "description": "StatefulSet update strategy type. Use RollingUpdate for zero-downtime upgrades or OnDelete for manual pod-by-pod control.",
+          "enum": [
+            "RollingUpdate",
+            "OnDelete"
+          ],
+          "required": []
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "then": {
+        "properties": {
+          "rollingUpdate": {
+            "required": [
+              "maxUnavailable"
+            ]
+          }
+        },
+        "required": [
+          "rollingUpdate"
+        ]
+      },
+      "title": "updateStrategy",
       "type": "object"
     }
   },

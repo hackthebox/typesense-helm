@@ -25,6 +25,10 @@ nameOverride: ""
 # -- Override the full name of the release (optional)
 fullnameOverride: ""
 
+# @schema
+# type: integer
+# minimum: 0
+# @schema
 # -- Termination grace period in seconds. Typesense recommends 300s to allow graceful shutdown.
 terminationGracePeriodSeconds: 300
 
@@ -34,10 +38,22 @@ podAnnotations: {}
 podLabels: {}
 
 podSecurityContext:
+  # @schema
+  # type: integer
+  # minimum: 0
+  # @schema
   # -- Group ID for the filesystem of the Typesense container
   fsGroup: 2000
+  # @schema
+  # type: integer
+  # minimum: 0
+  # @schema
   # -- User ID for running the Typesense process
   runAsUser: 10000
+  # @schema
+  # type: integer
+  # minimum: 0
+  # @schema
   # -- Group ID for running the Typesense process
   runAsGroup: 3000
   # -- Ensure the container does not run as root
@@ -65,6 +81,9 @@ service:
   port: 8108
 
 ingress:
+  # @schema
+  # type: boolean
+  # @schema
   # -- Enable or disable Ingress for the application
   enabled: false
   # -- The name of the Ingress class to use (e.g., nginx)
@@ -77,6 +96,9 @@ ingress:
   prefix: "/"
 
 gateway:
+  # @schema
+  # type: boolean
+  # @schema
   # -- Enable or disable Gateway API for the application
   enabled: false
   # -- List of hostnames the Gateway will route traffic for
@@ -119,44 +141,114 @@ gateway:
       namespace: "istio-system"
     extras: []
 
-# -- Resource requests and limits for the Typesense container
-resources: {}
+# -- Resource requests and limits for the Typesense container.
+# Typesense requires at least 2 vCPUs to operate correctly. No CPU limit is
+# set by default to avoid throttling during indexing and Raft catch-up.
+resources:
+  requests:
+    # @schema
+    # anyOf:
+    #   - type: string
+    #   - type: number
+    # @schema
+    cpu: 2000m
 
 livenessProbe:
-  # -- HTTP GET path and port to check Typesense health for liveness
+  # -- Probe type: 'tcpSocket' or 'httpGet'.
+  # Default is tcpSocket to check only that the process is alive and listening.
+  # Avoid httpGet /health for liveness: Typesense returns 503 when the write
+  # queue exceeds --healthy-write-lag (default 500), which occurs normally
+  # during Raft catch-up after a restart, causing a liveness-triggered restart
+  # loop that prevents the cluster from ever recovering.
+  type: tcpSocket
   httpGet:
     path: /health
     port: http
+  tcpSocket:
+    port: http
+  # @schema
+  # type: integer
+  # minimum: 1
+  # @schema
   # -- Number of failed liveness checks before restarting the container
-  failureThreshold: 2
+  failureThreshold: 6
+  # @schema
+  # type: integer
+  # minimum: 1
+  # @schema
   # -- Period (in seconds) to perform the liveness check
-  periodSeconds: 10
+  periodSeconds: 20
+  # @schema
+  # type: integer
+  # minimum: 1
+  # description: Timeout in seconds for the liveness check
+  # @schema
+  timeoutSeconds: 3
 
 startupProbe:
-  # -- HTTP GET path and port to check Typesense health for startup
+  # -- Probe type: 'httpGet' or 'tcpSocket'
+  type: httpGet
   httpGet:
     path: /health
     port: http
+  tcpSocket:
+    port: http
+  # @schema
+  # type: integer
+  # minimum: 1
+  # @schema
   # -- Number of failed startup checks before marking the container as unhealthy
-  failureThreshold: 10
+  failureThreshold: 60
+  # @schema
+  # type: integer
+  # minimum: 1
+  # @schema
   # -- Period (in seconds) to perform the startup check
   periodSeconds: 10
+  # @schema
+  # type: integer
+  # minimum: 1
+  # description: Timeout in seconds for the startup check
+  # @schema
+  timeoutSeconds: 3
 
 readinessProbe:
-  # -- HTTP GET path and port to check Typesense readiness
+  # -- Probe type: 'httpGet' or 'tcpSocket'
+  type: httpGet
   httpGet:
     path: /health
     port: http
+  tcpSocket:
+    port: http
+  # @schema
+  # type: integer
+  # minimum: 1
+  # @schema
   # -- Period (in seconds) to perform the readiness check
-  periodSeconds: 5
+  periodSeconds: 10
+  # @schema
+  # type: integer
+  # minimum: 1
+  # @schema
   # -- Number of failed readiness checks before marking the pod as unready
-  failureThreshold: 3
+  failureThreshold: 12
+  # @schema
+  # type: integer
+  # minimum: 1
+  # description: Timeout in seconds for the readiness check
+  # @schema
+  timeoutSeconds: 3
 
 # -- Node selector to schedule pods on specific nodes (optional)
 nodeSelector: {}
 # -- Tolerations for pod scheduling
 tolerations: []
-# -- Affinity rules for pod scheduling
+# @schema
+# type: object
+# @schema
+# -- Affinity rules for pod scheduling. When unset or empty and replicaCount > 1,
+# a soft pod anti-affinity on kubernetes.io/hostname is automatically applied. Set
+# to a non-empty affinity object to override this default behavior.
 affinity: {}
 # -- Topology spread constraints for pod distribution across nodes/zones
 topologySpreadConstraints: []
@@ -165,14 +257,65 @@ pdb:
   # @schema
   # type: boolean
   # @schema
-  # -- Enable PodDisruptionBudget for Typesense StatefulSet
-  enabled: false
+  # -- Enable PodDisruptionBudget for Typesense StatefulSet. Automatically skipped when replicaCount is 1.
+  enabled: true
   # @schema
-  # type: integer
-  # minimum: 1
+  # anyOf:
+  #   - type: integer
+  #     minimum: 0
+  #   - enum: [auto]
   # @schema
-  # -- Maximum number of pods that can be unavailable during disruption
-  maxUnavailable: 1
+  # -- (string/int) Maximum number of pods that can be unavailable during disruption.
+  # Set to "auto" (default) to auto-calculate as floor(replicaCount/2), preserving Raft quorum.
+  # Set to 0 to block all voluntary disruptions. Any positive value is used directly
+  # and must not exceed floor(replicaCount/2).
+  maxUnavailable: auto
+
+# @schema
+# type: object
+# required:
+#   - type
+# properties:
+#   type:
+#     description: "StatefulSet update strategy type. Use RollingUpdate for zero-downtime upgrades or OnDelete for manual pod-by-pod control."
+#     enum:
+#       - RollingUpdate
+#       - OnDelete
+#   rollingUpdate:
+#     type: object
+#     description: "Rolling update configuration. Only used when type is RollingUpdate."
+#     properties:
+#       maxUnavailable:
+#         description: "Maximum number of pods unavailable during a rolling update. Set to \"auto\" to auto-calculate as floor(replicaCount/2). Set to 0 to block all voluntary pod replacements. Must not exceed floor(replicaCount/2)."
+#         anyOf:
+#           - type: integer
+#             minimum: 0
+#           - enum: [auto]
+# if:
+#   properties:
+#     type:
+#       const: RollingUpdate
+# then:
+#   required:
+#     - rollingUpdate
+#   properties:
+#     rollingUpdate:
+#       required:
+#         - maxUnavailable
+# @schema
+# -- StatefulSet update strategy configuration.
+# When type is RollingUpdate, rollingUpdate.maxUnavailable is required.
+# When type is OnDelete, rollingUpdate is optional and ignored.
+updateStrategy:
+  # -- StatefulSet update strategy type. Use RollingUpdate (default) for zero-downtime
+  # upgrades or OnDelete for manual pod-by-pod control.
+  type: RollingUpdate
+  rollingUpdate:
+    # -- (string/int) Maximum number of pods that can be unavailable during a rolling update.
+    # Set to "auto" (default) to auto-calculate as floor(replicaCount/2), preserving Raft quorum.
+    # Set to 0 to block all voluntary pod replacements. Any positive value is used directly
+    # and must not exceed floor(replicaCount/2). Ignored when updateStrategy.type is OnDelete.
+    maxUnavailable: auto
 
 storage:
   # -- Storage class to use for Persistent Volume Claims (PVC)
@@ -192,6 +335,9 @@ secrets:
   # -- Whether the secretRef in envFrom is optional (pods start even if secret is missing)
   optional: true
   externalSecret:
+    # @schema
+    # type: boolean
+    # @schema
     # -- Enable or disable ExternalSecret creation (requires external-secrets operator)
     enabled: false
     # -- The name of the ClusterSecretStore or SecretStore to use
@@ -207,7 +353,7 @@ typesense:
     domains: []
   cache:
     # @schema
-    # type: [integer, "null"]
+    # type: [integer, null]
     # minimum: 0
     # @schema
     # -- LRU cache size for search responses. Unset uses Typesense default (1000)
@@ -216,34 +362,34 @@ typesense:
     # -- Enable aggregated search query analytics
     enabled: false
     # @schema
-    # type: [integer, "null"]
+    # type: [integer, null]
     # minimum: 1
     # @schema
     # -- How often analytics are persisted to disk in seconds. Unset uses Typesense default (3600)
     flushInterval:
   snapshots:
     # @schema
-    # type: [integer, "null"]
+    # type: [integer, null]
     # minimum: 1
     # @schema
     # -- Replication log snapshot frequency in seconds. Unset uses Typesense default (3600)
     intervalSeconds:
   # @schema
-  # type: [integer, "null"]
+  # type: [integer, null]
   # minimum: 1
   # @schema
   # -- Concurrent request handler threads. Unset uses Typesense default (NUM_CORES * 8)
   threadPoolSize:
   limits:
     # @schema
-    # type: [integer, "null"]
+    # type: [integer, null]
     # minimum: 0
     # maximum: 100
     # @schema
     # -- Reject writes above this disk usage percentage. Unset uses Typesense default (100)
     diskUsedMaxPercentage:
     # @schema
-    # type: [integer, "null"]
+    # type: [integer, null]
     # minimum: 0
     # maximum: 100
     # @schema
@@ -251,20 +397,20 @@ typesense:
     memoryUsedMaxPercentage:
   health:
     # @schema
-    # type: [integer, "null"]
+    # type: [integer, null]
     # minimum: 0
     # @schema
     # -- Update lag threshold before rejecting reads. Unset uses Typesense default (1000)
     readLag:
     # @schema
-    # type: [integer, "null"]
+    # type: [integer, null]
     # minimum: 0
     # @schema
     # -- Update lag threshold before rejecting writes. Unset uses Typesense default (500)
     writeLag:
   logging:
     # @schema
-    # type: [integer, "null"]
+    # type: [integer, null]
     # @schema
     # -- Threshold in ms for slow request logging (-1 disables). Unset uses Typesense default (-1)
     slowRequestsTimeMs:
@@ -286,6 +432,9 @@ serviceAccount:
   name: ""
   # -- Annotations to add to the ServiceAccount (e.g., for IRSA)
   annotations: {}
+  # @schema
+  # type: boolean
+  # @schema
   # -- Whether to automount the ServiceAccount token
   automountServiceAccountToken: false
 
@@ -312,6 +461,9 @@ metrics:
   # -- Resource requests and limits for the metrics sidecar
   resources: {}
   serviceMonitor:
+    # @schema
+    # type: boolean
+    # @schema
     # -- Enable ServiceMonitor for Prometheus scraping
     enabled: false
     # -- Scrape interval

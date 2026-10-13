@@ -31,13 +31,21 @@ Create chart name and version as used by the chart label.
 {{- end }}
 
 {{/*
+Resolve the effective Typesense application version.
+*/}}
+{{- define "typesense.appVersion" -}}
+{{- .Values.image.tag | default .Chart.AppVersion -}}
+{{- end }}
+
+{{/*
 Common labels
 */}}
 {{- define "typesense.labels" -}}
 helm.sh/chart: {{ include "typesense.chart" . }}
 {{ include "typesense.selectorLabels" . }}
-{{- if .Chart.AppVersion }}
-app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+{{- $appVersion := include "typesense.appVersion" . }}
+{{- if $appVersion }}
+app.kubernetes.io/version: {{ $appVersion | quote }}
 {{- end }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- if .Chart.Annotations.team }}
@@ -61,6 +69,31 @@ Create the name of the service account to use
 {{- default (include "typesense.fullname" .) .Values.serviceAccount.name }}
 {{- else }}
 {{- default "default" .Values.serviceAccount.name }}
+{{- end }}
+{{- end }}
+
+{{/*
+Render a probe with a single handler selected by .type (httpGet or tcpSocket).
+This avoids Helm's map-merge producing both handlers simultaneously when users
+override just the type in their values, which Kubernetes rejects.
+*/}}
+{{- define "typesense.probe" -}}
+{{- $p := . -}}
+{{- if eq $p.type "tcpSocket" }}
+tcpSocket: {{- toYaml $p.tcpSocket | nindent 2 }}
+{{- else }}
+httpGet: {{- toYaml $p.httpGet | nindent 2 }}
+{{- end }}
+failureThreshold: {{ $p.failureThreshold }}
+periodSeconds: {{ $p.periodSeconds }}
+{{- with $p.timeoutSeconds }}
+timeoutSeconds: {{ . }}
+{{- end }}
+{{- with $p.successThreshold }}
+successThreshold: {{ . }}
+{{- end }}
+{{- with $p.initialDelaySeconds }}
+initialDelaySeconds: {{ . }}
 {{- end }}
 {{- end }}
 

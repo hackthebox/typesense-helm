@@ -1,8 +1,6 @@
 # Changelog
 
-## 1.1.0 ![AppVersion: 30.1](https://img.shields.io/static/v1?label=AppVersion&message=30.1&color=success&logo=) ![Helm: v3](https://img.shields.io/static/v1?label=Helm&message=v3&color=informational&logo=helm)
-
-**Release date:** 2026-03-19
+## 1.2.0 ![AppVersion: 30.1](https://img.shields.io/static/v1?label=AppVersion&message=30.1&color=success&logo=) ![Helm: v3](https://img.shields.io/static/v1?label=Helm&message=v3&color=informational&logo=helm)
 
 ### Added
 
@@ -11,6 +9,25 @@
 - Pod-0-only backup enforcement
 - Configurable cron schedule, retention policy, and restic image
 - Extra env/envFrom support for backup credentials
+
+## 1.1.0 ![AppVersion: 30.1](https://img.shields.io/static/v1?label=AppVersion&message=30.1&color=success&logo=) ![Helm: v3](https://img.shields.io/static/v1?label=Helm&message=v3&color=informational&logo=helm)
+
+**Release date:** 2026-03-20
+
+### Added
+
+- PodDisruptionBudget is now enabled by default for multi-node clusters (replicaCount > 1), automatically skipped for single-replica deployments
+- Auto-calculated `maxUnavailable` for both PDB and StatefulSet `updateStrategy`, based on Raft fault tolerance (`floor(replicaCount/2)`), with user override support and quorum validation
+- Explicit `updateStrategy` on StatefulSet with `RollingUpdate` default and `OnDelete` support
+- Built-in soft pod anti-affinity (`preferredDuringSchedulingIgnoredDuringExecution`) on `kubernetes.io/hostname` for multi-node clusters, automatically spreading replicas across nodes
+- Template-level validation that rejects `maxUnavailable` values exceeding Raft fault tolerance
+
+### Changed
+
+- `pdb.enabled` default changed from `false` to `true`
+- `pdb.maxUnavailable` default changed from `1` to `"auto"` (auto-calculate as `floor(replicaCount/2)`)
+- `updateStrategy.rollingUpdate.maxUnavailable` added with default `"auto"` (auto-calculate)
+- Built-in soft pod anti-affinity is now injected when `affinity` is empty (`{}`)
 
 ## 1.0.0 ![AppVersion: 30.1](https://img.shields.io/static/v1?label=AppVersion&message=30.1&color=success&logo=) ![Helm: v3](https://img.shields.io/static/v1?label=Helm&message=v3&color=informational&logo=helm)
 
