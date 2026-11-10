@@ -334,6 +334,21 @@ tests:
       - equal:
           path: .spec.template.spec.serviceAccountName
           value: foo-typesense
+  - it: should render --reset-peers-on-error by default
+    asserts:
+      - notFailedTemplate: {}
+      - contains:
+          path: .spec.template.spec.containers[0].command
+          content: "--reset-peers-on-error"
+  - it: should omit --reset-peers-on-error when disabled
+    set:
+      typesense:
+        resetPeersOnError: false
+    asserts:
+      - notFailedTemplate: {}
+      - notContains:
+          path: .spec.template.spec.containers[0].command
+          content: "--reset-peers-on-error"
   - it: should render CORS flags when enabled
     set:
       typesense:
