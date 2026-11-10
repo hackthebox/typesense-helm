@@ -255,6 +255,7 @@ storage:
 | pdb.maxUnavailable | string/int | `"auto"` | Maximum number of pods that can be unavailable during disruption. Set to "auto" (default) to auto-calculate as floor(replicaCount/2), preserving Raft quorum. Set to 0 to block all voluntary disruptions. Any positive value is used directly and must not exceed floor(replicaCount/2). |
 | podAnnotations | object | `{}` | Additional annotations to add to the Typesense pod(s) |
 | podLabels | object | `{}` | Additional labels to add to the Typesense pod(s) |
+| podManagementPolicy | string | `"Parallel"` | StatefulSet pod management policy. `Parallel` (default) starts and stops all pods at once, which lets a new cluster form Raft quorum on first install. `OrderedReady` starts and stops pods one at a time, which keeps quorum while scaling, but pod N only starts after pod N-1 is Ready: with the default `/health` readiness probe a fresh multi-node cluster cannot bootstrap, so pair it with `readinessProbe.type=tcpSocket`. This field is immutable on an existing StatefulSet: changing it requires deleting the StatefulSet with `--cascade=orphan` before running `helm upgrade`. |
 | podSecurityContext.fsGroup | int | `2000` | Group ID for the filesystem of the Typesense container |
 | podSecurityContext.runAsGroup | int | `3000` | Group ID for running the Typesense process |
 | podSecurityContext.runAsNonRoot | bool | `true` | Ensure the container does not run as root |

@@ -689,3 +689,24 @@ tests:
           path: .spec.template.spec.affinity.nodeAffinity
       - notExists:
           path: .spec.template.spec.affinity.podAntiAffinity
+
+  - it: should default podManagementPolicy to Parallel
+    asserts:
+      - equal:
+          path: .spec.podManagementPolicy
+          value: Parallel
+
+  - it: should allow overriding podManagementPolicy to OrderedReady
+    set:
+      podManagementPolicy: OrderedReady
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: .spec.podManagementPolicy
+          value: OrderedReady
+
+  - it: should reject an unknown podManagementPolicy
+    set:
+      podManagementPolicy: Sequential
+    asserts:
+      - failedTemplate: {}

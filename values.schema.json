@@ -378,6 +378,15 @@
       "required": [],
       "title": "podLabels"
     },
+    "podManagementPolicy": {
+      "default": "Parallel",
+      "description": "StatefulSet pod management policy. `Parallel` (default) starts and stops all pods at once, which lets a new cluster form Raft quorum on first install. `OrderedReady` starts and stops pods one at a time, which keeps quorum while scaling, but pod N only starts after pod N-1 is Ready: with the default `/health` readiness probe a fresh multi-node cluster cannot bootstrap, so pair it with `readinessProbe.type=tcpSocket`. This field is immutable on an existing StatefulSet: changing it requires deleting the StatefulSet with `--cascade=orphan` before running `helm upgrade`.",
+      "enum": [
+        "Parallel",
+        "OrderedReady"
+      ],
+      "title": "podManagementPolicy"
+    },
     "podSecurityContext": {
       "properties": {
         "fsGroup": {
