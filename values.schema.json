@@ -918,6 +918,12 @@
           "title": "logging",
           "type": "object"
         },
+        "resetPeersOnError": {
+          "default": true,
+          "description": "Pass `--reset-peers-on-error` so Typesense resets its peer list when a peer error occurs. Disable on stable clusters to avoid extra Raft membership churn during catch-up",
+          "title": "resetPeersOnError",
+          "type": "boolean"
+        },
         "snapshots": {
           "properties": {
             "intervalSeconds": {

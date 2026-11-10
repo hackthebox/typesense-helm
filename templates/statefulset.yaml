@@ -70,7 +70,9 @@ spec:
             - "8107"
             - "--nodes"
             - "/usr/share/typesense/nodes"
+            {{- if .Values.typesense.resetPeersOnError }}
             - "--reset-peers-on-error"
+            {{- end }}
             {{- if .Values.typesense.cors.enabled }}
             - "--enable-cors"
             {{- if .Values.typesense.cors.domains }}

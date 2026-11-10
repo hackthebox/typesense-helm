@@ -346,6 +346,11 @@ secrets:
     extractKey: ""
 
 typesense:
+  # @schema
+  # type: boolean
+  # @schema
+  # -- Pass `--reset-peers-on-error` so Typesense resets its peer list when a peer error occurs. Disable on stable clusters to avoid extra Raft membership churn during catch-up
+  resetPeersOnError: true
   cors:
     # -- Enable CORS for browser/JS access
     enabled: false
