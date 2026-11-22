@@ -20,4 +20,34 @@ tests:
           namespace: bar
       - equal:
           path: .data.nodes
-          value: foo-typesense-0.foo-typesense-headless-svc.bar.svc.cluster.local:8107:8108,foo-typesense-1.foo-typesense-headless-svc.bar.svc.cluster.local:8107:8108,foo-typesense-2.foo-typesense-headless-svc.bar.svc.cluster.local:8107:8108
+          value: foo-typesense-0.foo-typesense-headless-svc:8107:8108,foo-typesense-1.foo-typesense-headless-svc:8107:8108,foo-typesense-2.foo-typesense-headless-svc:8107:8108
+  - it: should fail when a peer hostname exceeds 64 characters
+    template: configmap.yaml
+    set:
+      fullnameOverride: abcdefghijklmnopqrstuvwxy
+    asserts:
+      - failedTemplate:
+          errorPattern: "peer hostname abcdefghijklmnopqrstuvwxy-0.abcdefghijklmnopqrstuvwxy-headless-svc is 66 characters"
+  - it: should accept a peer hostname of exactly 64 characters
+    template: configmap.yaml
+    set:
+      fullnameOverride: abcdefghijklmnopqrstuvwx
+    asserts:
+      - notFailedTemplate: {}
+  - it: should count two-digit pod ordinals toward the hostname limit
+    template: configmap.yaml
+    set:
+      fullnameOverride: abcdefghijklmnopqrstuvwx
+      replicaCount: 11
+    asserts:
+      - failedTemplate:
+          errorPattern: "peer hostname abcdefghijklmnopqrstuvwx-10.abcdefghijklmnopqrstuvwx-headless-svc is 65 characters"
+  - it: should not count the namespace toward the hostname limit
+    template: configmap.yaml
+    release:
+      namespace: namespace-long-enough-to-push-fqdn-peer-names-over-the-limit
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: .data.nodes
+          value: foo-typesense-0.foo-typesense-headless-svc:8107:8108,foo-typesense-1.foo-typesense-headless-svc:8107:8108,foo-typesense-2.foo-typesense-headless-svc:8107:8108
