@@ -104,11 +104,14 @@ Create the nodeslist
 {{- $replicaCount := .Values.replicaCount | int }}
 {{- $fullname := include "typesense.fullname" . }}
 {{- $serviceName := printf "%s-headless-svc" $fullname }}
-{{- $namespace := .Release.Namespace }}
 {{- $port := printf "8107:%d" (int .Values.service.port) }}
 {{- $nodes := list }}
 {{- range $i := until $replicaCount }}
-  {{- $node := printf "%s-%d.%s.%s.svc.cluster.local:%s" $fullname $i $serviceName $namespace $port }}
+  {{- $host := printf "%s-%d.%s" $fullname $i $serviceName }}
+  {{- if gt (len $host) 64 }}
+  {{- fail (printf "peer hostname %s is %d characters, Typesense rejects peer hostnames over 64: shorten the release name or set a shorter fullnameOverride" $host (len $host)) }}
+  {{- end }}
+  {{- $node := printf "%s:%s" $host $port }}
   {{- $nodes = append $nodes $node }}
 {{- end }}
 {{- $nodes | join "," }}
