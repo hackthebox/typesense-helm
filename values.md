@@ -305,6 +305,7 @@ storage:
 | typesense.limits.memoryUsedMaxPercentage | string | `nil` | Reject writes above this memory usage percentage. Unset uses Typesense default (100) |
 | typesense.logging.enableSearchLogging | bool | `false` | Log search request payloads |
 | typesense.logging.slowRequestsTimeMs | string | `nil` | Threshold in ms for slow request logging (-1 disables). Unset uses Typesense default (-1) |
+| typesense.resetPeersOnError | bool | `true` | Pass `--reset-peers-on-error` so Typesense resets its peer list when a peer error occurs. Disable on stable clusters to avoid extra Raft membership churn during catch-up |
 | typesense.snapshots.intervalSeconds | string | `nil` | Replication log snapshot frequency in seconds. Unset uses Typesense default (3600) |
 | typesense.threadPoolSize | string | `nil` | Concurrent request handler threads. Unset uses Typesense default (NUM_CORES * 8) |
 | updateStrategy | object | `{"rollingUpdate":{"maxUnavailable":"auto"},"type":"RollingUpdate"}` | StatefulSet update strategy configuration. When type is RollingUpdate, rollingUpdate.maxUnavailable is required. When type is OnDelete, rollingUpdate is optional and ignored. |
