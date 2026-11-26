@@ -18,9 +18,11 @@ A production-ready Helm chart for deploying [Typesense](https://typesense.org), 
 - **Security Hardened** -- Non-root container (UID 10000), read-only root filesystem, all capabilities dropped
 - **Gateway API & Ingress** -- Supports both Kubernetes Ingress and Gateway API (HTTPRoute)
 - **Prometheus Metrics** -- Optional sidecar exporter with ServiceMonitor support
+- **Automated Backups** -- Optional restic-based backup sidecar with cron scheduling and retention policies
 - **External Secrets** -- Optional integration with the External Secrets Operator
 - **PodDisruptionBudget** -- Protect Raft quorum during node maintenance
 - **Comprehensive Tuning** -- CORS, analytics, cache, thread pools, logging, health thresholds
+- **Battle-tested** -- Actively used in production on AWS EKS with S3-based backups
 
 ## TL;DR
 
@@ -214,6 +216,41 @@ storage:
 ```
 
 > **Warning:** Reducing `storage.size` after initial deployment has no effect. PVC resize depends on your StorageClass supporting volume expansion.
+
+### Backup
+
+The chart includes an optional backup sidecar that uses [restic](https://restic.net) to take scheduled snapshots of Typesense data and upload them to a remote repository (S3, GCS, Azure Blob, etc.).
+
+```yaml
+backup:
+  enabled: true
+  intervalSeconds: 86400       # every 24 hours
+  retention:
+    keepLast: 7
+  envFrom:
+    - secretRef:
+        name: restic-credentials
+```
+
+The `restic-credentials` Secret should contain `RESTIC_REPOSITORY`, `RESTIC_PASSWORD`, and any cloud provider credentials (e.g., `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`).
+
+For quick testing, you can pass credentials inline (not recommended for production):
+
+```yaml
+backup:
+  enabled: true
+  env:
+    - name: RESTIC_REPOSITORY
+      value: s3:s3.amazonaws.com/my-bucket/typesense
+    - name: RESTIC_PASSWORD
+      value: my-restic-password
+```
+
+Key details:
+- Backups only run on **pod-0** (other pods skip automatically)
+- The restic repository is initialized automatically on the first run
+- The backup sidecar runs as non-root (UID 10000) with all capabilities dropped
+- See [RESTORE_RUNBOOK.md](RESTORE_RUNBOOK.md) for disaster recovery procedures
 
 {{ template "chart.valuesSection" . }}
 

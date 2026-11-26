@@ -1,0 +1,252 @@
+suite: Backup
+release:
+  name: foo
+  namespace: bar
+set:
+  replicaCount: 3
+templates:
+  - backup-scripts-configmap.yaml
+  - statefulset.yaml
+tests:
+  - it: should not render backup scripts configmap when backup is disabled
+    template: backup-scripts-configmap.yaml
+    asserts:
+      - notFailedTemplate: {}
+      - hasDocuments:
+          count: 0
+
+  - it: should render backup scripts configmap when backup is enabled
+    template: backup-scripts-configmap.yaml
+    set:
+      backup:
+        enabled: true
+        image:
+          repository: myrepo/backup
+          tag: "1.0"
+    asserts:
+      - notFailedTemplate: {}
+      - hasDocuments:
+          count: 1
+      - containsDocument:
+          apiVersion: v1
+          kind: ConfigMap
+          name: foo-typesense-backup-scripts
+          namespace: bar
+      - isNotEmpty:
+          path: .data["entrypoint.sh"]
+      - isNotEmpty:
+          path: .data["backup.sh"]
+
+  - it: should not add backup sidecar when disabled
+    template: statefulset.yaml
+    asserts:
+      - notFailedTemplate: {}
+      - lengthEqual:
+          path: .spec.template.spec.containers
+          count: 1
+
+  - it: should add backup sidecar when enabled
+    template: statefulset.yaml
+    set:
+      metrics:
+        enabled: false
+      backup:
+        enabled: true
+        image:
+          repository: myrepo/backup
+          tag: "1.0"
+    asserts:
+      - notFailedTemplate: {}
+      - lengthEqual:
+          path: .spec.template.spec.containers
+          count: 2
+      - equal:
+          path: .spec.template.spec.containers[1].name
+          value: backup-sidecar
+
+  - it: should mount scripts configmap in backup sidecar
+    template: statefulset.yaml
+    set:
+      metrics:
+        enabled: false
+      backup:
+        enabled: true
+        image:
+          repository: myrepo/backup
+          tag: "1.0"
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: .spec.template.spec.containers[1].volumeMounts[1].name
+          value: backup-scripts
+      - equal:
+          path: .spec.template.spec.containers[1].volumeMounts[1].mountPath
+          value: /scripts
+
+  - it: should mount data PVC in backup sidecar
+    template: statefulset.yaml
+    set:
+      metrics:
+        enabled: false
+      backup:
+        enabled: true
+        image:
+          repository: myrepo/backup
+          tag: "1.0"
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: .spec.template.spec.containers[1].volumeMounts[0].mountPath
+          value: /usr/share/typesense/data
+
+  - it: should pass BACKUP_INTERVAL_SECONDS and BACKUP_KEEP_LAST env vars to sidecar
+    template: statefulset.yaml
+    set:
+      metrics:
+        enabled: false
+      backup:
+        enabled: true
+        intervalSeconds: 3600
+        retention:
+          keepLast: 14
+        image:
+          repository: myrepo/backup
+          tag: "1.0"
+    asserts:
+      - notFailedTemplate: {}
+      - contains:
+          path: .spec.template.spec.containers[1].env
+          content:
+            name: BACKUP_INTERVAL_SECONDS
+            value: "3600"
+      - contains:
+          path: .spec.template.spec.containers[1].env
+          content:
+            name: BACKUP_KEEP_LAST
+            value: "14"
+
+  - it: should harden backup sidecar with securityContext
+    template: statefulset.yaml
+    set:
+      metrics:
+        enabled: false
+      backup:
+        enabled: true
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: .spec.template.spec.containers[1].securityContext
+          value:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 10000
+            runAsGroup: 3000
+            capabilities:
+              drop:
+                - ALL
+
+  - it: should share typesense secret with backup sidecar
+    template: statefulset.yaml
+    set:
+      metrics:
+        enabled: false
+      backup:
+        enabled: true
+        image:
+          repository: myrepo/backup
+          tag: "1.0"
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: .spec.template.spec.containers[1].envFrom[0].secretRef.name
+          value: foo-typesense-secret
+
+  - it: should merge extra envFrom into backup sidecar
+    template: statefulset.yaml
+    set:
+      metrics:
+        enabled: false
+      backup:
+        enabled: true
+        image:
+          repository: myrepo/backup
+          tag: "1.0"
+        envFrom:
+          - secretRef:
+              name: restic-credentials
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: .spec.template.spec.containers[1].envFrom[1].secretRef.name
+          value: restic-credentials
+
+  - it: should render default restic image when no image is configured
+    template: statefulset.yaml
+    set:
+      metrics:
+        enabled: false
+      backup:
+        enabled: true
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: .spec.template.spec.containers[1].image
+          value: "ghcr.io/restic/restic:0.18.1"
+
+  - it: backup sidecar should use configured image
+    template: statefulset.yaml
+    set:
+      metrics:
+        enabled: false
+      backup:
+        enabled: true
+        image:
+          repository: myrepo/backup
+          tag: "1.0"
+          pullPolicy: Always
+    asserts:
+      - notFailedTemplate: {}
+      - equal:
+          path: .spec.template.spec.containers[1].image
+          value: "myrepo/backup:1.0"
+      - equal:
+          path: .spec.template.spec.containers[1].imagePullPolicy
+          value: Always
+
+  - it: should place backup sidecar at containers[2] when metrics also enabled
+    template: statefulset.yaml
+    set:
+      metrics:
+        enabled: true
+      backup:
+        enabled: true
+        image:
+          repository: myrepo/backup
+          tag: "1.0"
+    asserts:
+      - notFailedTemplate: {}
+      - lengthEqual:
+          path: .spec.template.spec.containers
+          count: 3
+      - equal:
+          path: .spec.template.spec.containers[2].name
+          value: backup-sidecar
+
+  - it: should mount backup-scripts volume in pod when backup enabled
+    template: statefulset.yaml
+    set:
+      backup:
+        enabled: true
+        image:
+          repository: myrepo/backup
+          tag: "1.0"
+    asserts:
+      - notFailedTemplate: {}
+      - contains:
+          path: .spec.template.spec.volumes
+          content:
+            name: backup-scripts
+            configMap:
+              name: foo-typesense-backup-scripts
+              defaultMode: 0755
