@@ -11,7 +11,7 @@ metadata:
     {{- include "typesense.labels" . | nindent 4 }}
 spec:
   serviceName: {{ include "typesense.fullname" . }}-headless-svc
-  podManagementPolicy: Parallel
+  podManagementPolicy: {{ .Values.podManagementPolicy }}
   replicas: {{ .Values.replicaCount }}
   updateStrategy:
     {{- if not (or (eq .Values.updateStrategy.type "RollingUpdate") (eq .Values.updateStrategy.type "OnDelete")) }}

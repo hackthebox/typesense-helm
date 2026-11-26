@@ -32,6 +32,17 @@ fullnameOverride: ""
 # -- Termination grace period in seconds. Typesense recommends 300s to allow graceful shutdown.
 terminationGracePeriodSeconds: 300
 
+# @schema
+# enum: [Parallel, OrderedReady]
+# @schema
+# -- StatefulSet pod management policy. `Parallel` (default) starts and stops all pods at once,
+# which lets a new cluster form Raft quorum on first install. `OrderedReady` starts and stops pods
+# one at a time, which keeps quorum while scaling, but pod N only starts after pod N-1 is Ready:
+# with the default `/health` readiness probe a fresh multi-node cluster cannot bootstrap, so pair it
+# with `readinessProbe.type=tcpSocket`. This field is immutable on an existing StatefulSet: changing
+# it requires deleting the StatefulSet with `--cascade=orphan` before running `helm upgrade`.
+podManagementPolicy: Parallel
+
 # -- Additional annotations to add to the Typesense pod(s)
 podAnnotations: {}
 # -- Additional labels to add to the Typesense pod(s)
